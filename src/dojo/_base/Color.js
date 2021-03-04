@@ -9,7 +9,7 @@ export default class Color {
         this.a = 0
         if (color) {
             this.setColor(color)
-        }       
+        }
     }
 
     setColor (/*Array|String|Object*/ color){
@@ -100,6 +100,7 @@ export default class Color {
 		/*Number*/ weight,
 		/*Color?*/ obj
 	){
+
 		// summary:
 		//		Blend colors end and start with weight from 0 to 1, 0.5 being a 50/50 blend,
 		//		can reuse a previously allocated Color object for the result
@@ -144,14 +145,13 @@ export default class Color {
 		let mask = (1 << bits) - 1;
         color = Number("0x" + color.substr(1));
 		if(isNaN(color)){
-            console.warn('Color.fromHex() > Could not parse', color)
 			return
         }
         let rgb = ["b", "g", "r"]
 		rgb.forEach(x => {
             var c = color & mask;
             color >>= bits;
-            t[x] = bits == 4 ? 17 * c : c;            
+            t[x] = bits == 4 ? 17 * c : c;
 		})
 		t.a = 1;
 		return t;	// Color
@@ -160,17 +160,17 @@ export default class Color {
     fromArray (a) {
         var t = this
 		t._set(Number(a[0]), Number(a[1]), Number(a[2]), Number(a[3]));
-		if(isNaN(t.a)){ 
-            t.a = 
-            1; 
-        }	
+		if(isNaN(t.a)){
+            t.a =
+            1;
+        }
     }
-    
-    fromString (str) {   
+
+    fromString (str) {
         if (str === 'transparent') {
             this._set(0, 0, 0, 0);
         } else {
-            return this.fromRgb(str) || this.fromHex(str);	
+            return this.fromRgb(str) || this.fromHex(str);
         }
     }
 }

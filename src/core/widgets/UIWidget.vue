@@ -10,9 +10,18 @@ import domStyle from "dojo/domStyle";
 import _Touch from "common/_Touch";
 import Layout from "core/Layout";
 import Gestures from "core/Gestures";
+import Logger from 'common/Logger'
+
+const styleKeysForResize = [
+			'fontSize',
+			"borderTopLeftRadius", "borderTopRightRadius", "borderBottomRightRadius", "borderBottomLeftRadius",
+			"borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+			'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+      'boxShadow', 'textShadow', 'letterSpacing', 'icon']
 
 export default {
   name: "UIWidget",
+  props: ['qWidget', 'qQcaleX', 'qQcaleY'],
   mixins: [Layout, _Touch, Gestures, DojoWidget],
   data: function() {
     return {
@@ -30,7 +39,8 @@ export default {
       ],
       lastValidation: true,
       hoverAnimationDuration: 150,
-      erroAnimationDuration: 0
+      erroAnimationDuration: 0,
+      isPublic: false
     };
   },
   components: {},
@@ -63,6 +73,14 @@ export default {
     getValidationProperties () {
     },
 
+    setJwtToken(t) {
+      this.jwtToken = t
+    },
+
+    setPublic(p) {
+      this.isPublic = p
+    },
+
     /**
      * Gets called from the RenderFactory. Simple classes do not need to overwrite
      */
@@ -72,6 +90,13 @@ export default {
       this._scaleX = scaleX;
       this._scaleY = scaleY;
       this.setStyle(style, model);
+    },
+
+    /*
+     * should be called when the widget was scalled, e.g. by
+     */
+    updateScale (model, style, scaleX, scaleY) {
+      this.render(model, style, scaleX, scaleY)
     },
 
     getScaledValue (v ) {
@@ -127,6 +152,9 @@ export default {
       return null;
     },
 
+    getValue () {
+    },
+
     setFactory: function(m) {
       this.factory = m;
     },
@@ -148,10 +176,8 @@ export default {
      * The method has to check if it is bound the the variable.
      * If so, it should return true, else false
      *
-     *
      */
-    setDataBinding: function(variable, value) {
-      
+    setDataBinding (variable, value) {
       var databinding = this.getDataBinding(this.model);
       if (databinding && databinding["default"]) {
         var widgetVarialbe = databinding["default"];
@@ -160,14 +186,20 @@ export default {
           return true;
         }
       }
-
       return false;
+    },
+
+    /**
+     * Widgets can have some kind of output value!
+     */
+    getOutputDataBindingValue () {
     },
 
     /**
      * Can be overwritten by children to have proper type conversion
      */
     _setDataBindingValue: function(v) {
+
       this.setValue(v);
     },
 
@@ -589,7 +621,7 @@ export default {
         this._lastAnimPos = pos;
       }
 
-      //
+
     },
 
     /**
@@ -652,6 +684,23 @@ export default {
       }
     },
 
+    setTextContent (e, txt) {
+      if (e) {
+        txt = this.stripHTML(txt);
+        txt = txt.replace(/\n/g, "<br>");
+        txt = txt.replace(/\$perc;/g, "%");
+        e.textContent = txt;
+      } else {
+        console.warn("setTextContent() > No node to set test > ", txt);
+      }
+    },
+
+    removeAllChildren (node) {
+       while (node.lastChild) {
+        node.removeChild(node.lastChild);
+      }
+    },
+
     setScalledNodeStyle: function(node, style, list) {
       for (var i = 0; i < list.length; i++) {
         var p = list[i];
@@ -661,30 +710,10 @@ export default {
     },
 
     setBorderColor: function() {
-      this._setBorderStyle(
-        "borderTopColor",
-        this.domNode,
-        this.style,
-        this.model
-      );
-      this._setBorderStyle(
-        "borderBottomColor",
-        this.domNode,
-        this.style,
-        this.model
-      );
-      this._setBorderStyle(
-        "borderRightColor",
-        this.domNode,
-        this.style,
-        this.model
-      );
-      this._setBorderStyle(
-        "borderLeftColor",
-        this.domNode,
-        this.style,
-        this.model
-      );
+      this._setBorderStyle("borderTopColor", this.domNode, this.style, this.model);
+      this._setBorderStyle( "borderBottomColor", this.domNode, this.style, this.model);
+      this._setBorderStyle( "borderRightColor", this.domNode, this.style, this.model);
+      this._setBorderStyle( "borderLeftColor", this.domNode, this.style, this.model);
     },
 
     _setBorderRadius: function(node, style) {
@@ -699,15 +728,31 @@ export default {
       this._setBorderRadius(node, style);
     },
 
-    setStyle: function(style, model) {
-      for (var p in style) {
-        if (this["_set_" + p]) {
-          this["_set_" + p](this.domNode, style, model);
-        } else {
-          if (style[p] != null) {
-            this.domNode.style[p] = style[p];
+    setStyle (style, model, isResize = false ) {
+      /**
+       * Since 3.0.32 we to selective updates on zooms
+       */
+      if (isResize) {
+        for (let i=0; i < styleKeysForResize.length; i++) {
+          let p = styleKeysForResize[i]
+          if (style[p] !== null && style[p] !== 0) {
+           if (this["_set_" + p]) {
+            this["_set_" + p](this.domNode, style, model);
+            } else {
+              this.domNode.style[p] = style[p];
+            }
+          }
+			  }
+      } else {
+        for (var p in style) {
+          // we have to call the method, to be sure to also handle nulls,
+          // e.g. for background images
+          if (this["_set_" + p]) {
+            this["_set_" + p](this.domNode, style, model);
           } else {
-            //console.warn("The style", p ," is no value!", model);
+            if (style[p] != null) {
+              this.domNode.style[p] = style[p];
+            }
           }
         }
       }
@@ -747,19 +792,7 @@ export default {
         var b = this.getZoomed(shadow.b, Math.max(this._scaleY, this._scaleX));
         var s = this.getZoomed(shadow.s, Math.max(this._scaleY, this._scaleX));
         var inset = shadow.i ? "inset" : "";
-
-        var value =
-          h +
-          "px " +
-          v +
-          "px " +
-          b +
-          "px " +
-          s +
-          "px " +
-          shadow.c +
-          " " +
-          inset;
+        var value = h + "px " + v + "px " + b + "px " + s + "px " + shadow.c + " " + inset;
         if (this._shadowNodes) {
           for (var i = 0; i < this._shadowNodes.length; i++) {
             var node = this._shadowNodes[i];
@@ -965,61 +998,94 @@ export default {
       }
     },
 
+
+    _set_backgroundImageRotation (parent, style) {
+      if (this._iconNodes) {
+        this._iconNodes.forEach(node => {
+          if (node) {
+            node.style.transform = `rotate(${style.backgroundImageRotation}deg)`
+          }
+        })
+        css.add(parent, 'MatchWidgetTypeIconRotated')
+      }
+      /**
+       * Here is still a bug, because this we sets the background image on the parent.
+       * This does not matter much, because, animation look anohow shit when not cropped.
+       */
+      if (this._imageNodes) {
+        this._imageNodes.forEach(node => {
+          if (node) {
+            node.style.transform = `rotate(${style.backgroundImageRotation}deg)`
+          }
+        })
+      }
+    },
+
+
     /**
      * background image
      */
     _set_backgroundImage: function(parent, style, model) {
-      if (this._borderNodes) {
-        var node = this._borderNodes[model.id];
-        if (node) {
-          parent = node;
-        }
-      }
-
+      /**
+       * With the new update of the RemderFacory, this should be set in the image node...
+       */
       var img = style.backgroundImage;
       if (img) {
-        css.add(parent, "MatcScreenImage");
-        if (img) {
-          if (img.w > img.h) {
-            css.add(parent, "MatcScreenImageHorizontal");
-          } else {
-            css.add(parent, "MatcScreenImageVertical");
-          }
-          if (this.hash) {
-            parent.style.backgroundImage =
-              "url(/rest/images/" + this.hash + "/" + img.url + ")";
-          } else {
-            var url = "url(/rest/images/" + img.url + ")";
-            parent.style.backgroundImage = url;
-          }
-
-          if (style.backgroundSize) {
-            parent.style.backgroundSize = style.backgroundSize + "%";
-          } else {
-            parent.style.backgroundSize = "100%"; // 100%
-          }
-
-          if (style.backgroundPosition && this.model) {
-            var pos = style.backgroundPosition;
-            parent.style.backgroundPosition =
-              Math.round(pos.left * this.model.w) +
-              "px " +
-              Math.round(pos.top * this.model.h) +
-              "px";
-            parent.style.webkitBackgroundPosition =
-              Math.round(pos.left * this.model.w) +
-              "px " +
-              Math.round(pos.top * this.model.h) +
-              "px";
-          } else {
-            parent.style.backgroundPosition = "0 0"; // 100%
-          }
-
-          parent.style.backgroundRepeat = "no-repeat";
+        if (this._imageNodes) {
+            this._imageNodes.forEach(node => {
+              if (node) {
+                this._set_backgroundImageInNode(node, style, model)
+              }
+            })
         } else {
-          parent.style.backgroundImage = "none";
+          console.warn('UIWidget._set_backgroundImage() > no image nodes passed...')
+          this._set_backgroundImageInNode(parent, style, model)
         }
+
       }
+    },
+
+    _set_backgroundImageInNode (parent, style) {
+      var img = style.backgroundImage;
+      css.add(parent, "MatcScreenImage");
+      if (img) {
+        if (img.w > img.h) {
+          css.add(parent, "MatcScreenImageHorizontal");
+        } else {
+          css.add(parent, "MatcScreenImageVertical");
+        }
+        if (this.hash) {
+          parent.style.backgroundImage = "url(/rest/images/" + this.hash + "/" + img.url + ")";
+        } else if (this.jwtToken) {
+          parent.style.backgroundImage = "url(/rest/images/" + img.url + "?token=" + this.jwtToken + ")";
+        } else {
+          this.logger.warn('_set_backgroundImageInNode', 'error > no token or hash')
+          if (!this.isPublic) {
+            this.logger.sendError(new Error('No hash for image'))
+          }
+          var url = "url(/rest/images/" + img.url + ")";
+          parent.style.backgroundImage = url;
+        }
+
+        if (style.backgroundSize) {
+          parent.style.backgroundSize = style.backgroundSize + "%";
+        } else {
+          parent.style.backgroundSize = "100%"; // 100%
+        }
+
+        if (style.backgroundPosition && this.model) {
+          var pos = style.backgroundPosition;
+          parent.style.backgroundPosition = Math.round(pos.left * this.model.w) + "px " + Math.round(pos.top * this.model.h) + "px";
+          parent.style.webkitBackgroundPosition = Math.round(pos.left * this.model.w) + "px " + Math.round(pos.top * this.model.h) + "px";
+        } else {
+          parent.style.backgroundPosition = "0 0"; // 100%
+        }
+
+        parent.style.backgroundRepeat = "no-repeat";
+      } else {
+        parent.style.backgroundImage = "none";
+      }
+
     },
 
     _set_verticalAlign: function(parent, style) {
@@ -1029,13 +1095,7 @@ export default {
           // reset class.. this is a little hacky! We should not do this too often!
           label.className = "MatcInlineEditable";
           if (style.textAlign) {
-            css.add(
-              label,
-              "MatcInlineEditVAlign-" +
-                style.verticalAlign +
-                "-" +
-                style.textAlign
-            );
+            css.add(label, "MatcInlineEditVAlign-" + style.verticalAlign + "-" + style.textAlign);
           } else {
             css.add(label, "MatcInlineEditVAlign-" + style.verticalAlign);
           }
@@ -1047,56 +1107,8 @@ export default {
       parent.style.letterSpacing = style.letterSpacing * this._scaleX + "px";
     },
 
-    /**********************************************************************
-     * QDate methods!
-     **********************************************************************/
 
-    convertQDateToString: function(qdate) {
-      var d = this.convertQDateToDate(qdate);
-      return d.toLocaleDateString();
-    },
 
-    isEqualDate: function(a, b) {
-      if (a && b) {
-        return a.d == b.d && a.m == b.m && a.y == b.y;
-      }
-      return false;
-    },
-
-    isQDate: function(d) {
-      return d.d != null && d.m != null && d.y != null;
-    },
-
-    createNow: function() {
-      return this.convertDateToQdate(new Date());
-    },
-
-    createQDate: function(year, month, day) {
-      // use date object to parse correctly..
-      var d = new Date(year, month, day);
-      return this.convertDateToQdate(d);
-    },
-
-    convertDateToQdate: function(d) {
-      return {
-        d: d.getDate(),
-        m: d.getMonth(),
-        y: d.getFullYear()
-      };
-    },
-
-    convertQDateToDate: function(qdate) {
-      return new Date(qdate.y, qdate.m, qdate.d);
-    },
-
-    convertMillisToQDate: function(ms) {
-      var d = new Date(ms);
-      return this.convertDateToQdate(d);
-    },
-
-    convertQDateToMillis: function(qdate) {
-      return new Date(qdate.y, qdate.m, qdate.d).getTime();
-    },
 
     /**********************************************************************
      * helper methods!
@@ -1178,6 +1190,11 @@ export default {
   destroyed () {
     this.beforeDestroy()
   },
-  mounted() {}
+  mounted() {
+    if (this.qWidget) {
+      this.render(this.qWidget, this.qWidget.style, this.qQcaleX, this.qQcaleX, false);
+    }
+    this.logger = new Logger('UIWidget')
+  }
 };
 </script>

@@ -33,14 +33,20 @@ export default {
   },
   components: {},
   computed: {
-    options () {
-      return this.style.options
-    },
     label () {
-        if (this.model && this.model.props){
-            return this.model.props.label
+      if (this.value && !this.icon && this.value.name) {
+        return this.value.name
+      }
+      if (this.model && this.model.props){
+          return this.model.props.label
+      }
+      return ''
+    },
+    maxFiles () {
+        if (this.model && this.model.props && this.model.props.maxFiles !== undefined){
+            return this.model.props.maxFiles
         }
-        return ''
+        return 1
     },
     icon () {
         if (this.model && this.model.style && this.model.style.icon){
@@ -57,24 +63,16 @@ export default {
   },
   methods: {
 
-    onFileChange (e) {
-      console.debug('onChange', e)
+    onFileChange () {
       if (this.$refs.input) {
         let files = this.$refs.input.files;
-        if (files.length === 1) {
-          let reader = new FileReader()
-          if (reader.readAsDataURL) {
-            reader.onload = () => {
-              this.setImage(reader.result, e)
-            }
-            reader.readAsDataURL(files[0])
-          }
+        if (files.length >= this.maxFiles) {
+          this.setImage(files[0])
         }
       }
     },
 
     setImage (image, e) {
-      console.debug('setImage', image)
       this.value = image
       this.emitDataBinding(this.value);
       this.emitClick(e);
@@ -141,13 +139,11 @@ export default {
     },
 
     resize (pos) {
-      console.debug('resize', pos.w, pos.h)
       this.bbox.w = pos.w
       this.bbox.h = pos.h
     },
 
     onClick (e) {
-      console.debug('onClick')
       this.stopEvent(e);
       this.emitClick(e);
     }

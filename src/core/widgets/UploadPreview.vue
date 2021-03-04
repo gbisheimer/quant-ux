@@ -1,6 +1,7 @@
 
 <template>
   <div :class="['MatcWidgetTypeUploadPreview', {'MatcWidgetTypeUploadPreviewImage': hasImage}]" :style="{'backgroundImage': src}"/>
+
 </template>
 <script>
 import DojoWidget from "dojo/DojoWidget";
@@ -26,28 +27,43 @@ export default {
       },
       src () {
           if (this.value) {
-                let url = 'url(' + this.value + ')';
-                return url
+            /**
+             * Vale was set by data binding! 
+             */
+            let url = 'url(' + this.value + ')';
+            return url
           } else if (this.model) {
-                var w = this.model.w * 2;
-			    var h = this.model.h * 2;
-				var c = document.createElement("canvas");
-				var context = c.getContext("2d");
-				c.width = w;
-				c.height = h;
-				h += 0.5;
-                w += 0.5;
-				var n = 0.5;
-				context.moveTo(n, n);
-				context.lineTo(w, h);
-				context.moveTo(w, n);
-				context.lineTo(n, h);
-				context.strokeStyle = "#333";
-				context.strokeWidth = 2;
-				context.imageSmoothingEnabled = false;
-				context.stroke();
-                let url = 'url(' + c.toDataURL("image/png") + ')';
-                return url
+            if (this.model.style && this.model.style.backgroundImage) {
+              /**
+               * We have a normal background pic
+               */
+              let url = 'url(' + this.model.style.backgroundImage + ')';
+              return url
+            } else {
+              /**
+               * We draw a placeholder
+               */
+              var w = this.model.w * 2;
+              var h = this.model.h * 2;
+              var c = document.createElement("canvas");
+              var context = c.getContext("2d");
+              c.width = w;
+              c.height = h;
+              h += 0.5;
+              w += 0.5;
+              var n = 0.5;
+              context.moveTo(n, n);
+              context.lineTo(w, h);
+              context.moveTo(w, n);
+              context.lineTo(n, h);
+              context.strokeStyle = "#333";
+              context.strokeWidth = 2;
+              context.imageSmoothingEnabled = false;
+              context.stroke();
+              let url = 'url(' + c.toDataURL("image/png") + ')';
+              return url
+
+            }
           }
           return ''
       }
@@ -82,11 +98,35 @@ export default {
     /**
      * Can be overwritten by children to have proper type conversion
      */
-    _setDataBindingValue: function(v) {
-        if (v.indexOf && v.indexOf('ata:image/png;base64' === 0)) {
+    _setDataBindingValue: function(v) {        
+        /**
+         * We can have normal urls and data ulrs
+         */
+        if (v.substring && (v.indexOf('data:image/png;base64') === 0 || v.indexOf('http') === 0)) {
             this.setValue(v);
-        } else {
-            console.error('Only data urls supported', v)
+            return;
+        } 
+        /**
+         * Sometimes its files
+         */
+        if (v.name && v.size) {
+          let reader = new FileReader()
+          if (reader.readAsDataURL) {
+            reader.onload = () => {
+              this.setValue(reader.result)
+            }
+            reader.readAsDataURL(v)
+          }
+          return;
+        } 
+        /**
+         * Last it can handle array buffers
+         */
+        try {
+          let imgUrl = this.bufferToImage(v)
+          this.setValue(imgUrl)
+        } catch (e) {
+          console.error('UploadPreview._setDataBindingValue() Cannot handle data. Not ArrayBuffer',e)
         }
     },
 
@@ -96,6 +136,19 @@ export default {
 
     setValue: function(value) {
       this.value = value;
+    },
+
+    bufferToImage (buffer) {
+      var base64Flag = 'data:image/jpeg;base64,';
+      var imageStr = this.arrayBufferToBase64(buffer);
+      return base64Flag + imageStr
+    },
+
+    arrayBufferToBase64 (buffer) {
+        var binary = '';
+        var bytes = [].slice.call(new Uint8Array(buffer));      
+        bytes.forEach((b) => binary += String.fromCharCode(b));
+        return window.btoa(binary);
     },
 
     getState: function() {

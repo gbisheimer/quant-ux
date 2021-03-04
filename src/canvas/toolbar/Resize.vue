@@ -34,11 +34,11 @@
                       <div class="MatcToolbarResizeGrowLine" />
                 </div>
 
-                 
+
             </div>
             <span class="MatcToolbarResizeLabel">Fixed Size</span>
         </div>
-        
+
 
         <div class="MatcToolbarResizePreviewCntr">
             <div class="MatcToolbarResizePreview">
@@ -47,9 +47,7 @@
             <span class="MatcToolbarResizeLabel">Preview</span>
         </div>
 
-       
-      
-       
+
 	</div>
 </template>
 
@@ -135,7 +133,7 @@ export default {
 
 		blur  (){
         },
-        
+
         onChange () {
             if (this.hasPinRight && this.hasPinLeft) {
                 this.growHorizontal = false;
@@ -153,15 +151,13 @@ export default {
             }
             this.isDirty = true
             this.emit('change', resize)
-            console.debug('Responsive.onChange', resize)
         },
-		
+
 		setValue  (v){
-            console.debug('Responsive.setValue', v.id)
             if (this.lastWidgetID != v.id) {
                 this.isDirty = false;
             }
-            if (v.props.resize) {
+            if (v.props && v.props.resize) {
                 let resize = v.props.resize
                 this.hasPinRight = resize.right
                 this.hasPinUp = resize.up
@@ -179,11 +175,11 @@ export default {
             }
             this.lastWidgetID = v.id;
 		},
-		
-		setModel  (m){
+
+		setModel (m){
 			this.model = m;
 		}
-    }, 
+    },
     mounted () {
     }
 }

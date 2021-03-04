@@ -14,7 +14,7 @@
 	"has" : {
 		"onclick" : true,
 		"backgroundImage" : true,
-		"border":true
+		"borderRadus" : true
 	},
 	"actions" : {},
 	"style" : {

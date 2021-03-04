@@ -1,76 +1,80 @@
 <template>
   <div class="MatcTest">
-    <div class="MatcSection">
+    <section class="section">
       <div class="container">
-        <div class="row">
-          <div class="col-md-2">
-            <h2>
-              Users
-              <!--
-              <a href="#help/how_many_users.html" class="MatcHelpIcon">
-                <span class="mdi mdi-help-circle"></span>
-              </a>
-              -->
-            </h2>
-          </div>
-          <div class="col-md-10 MatcForm" id="testUserCountCntr">
-            <BulletGraph :value="sessionCount" :sections="bulletGraphSection"/>
+        <div class="box is-shadowless">
+          <h2 class="title">Users</h2>
+          <div class="MatcForm" id="testUserCountCntr">
+            <BulletGraph :value="sessionCount" :sections="bulletGraphSection" />
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="MatcSection" data-dojo-attach-point="sectionDes">
+    </section>
+    <section class="section" data-dojo-attach-point="sectionDes">
       <div class="container">
-        <h2 data-nls="testSettingsDescription">Description</h2>
-        <textarea
-          class="form-control input-lg MatcMarginBottom"
-          v-model="test.description"
-          data-gramm_editor="false"
-          @change="onDescriptionChange"
-          placeholder="Enter here a description that will be shown to your testers."></textarea>
+        <div class="box is-shadowless">
+          <h2 data-nls="testSettingsDescription" class="title">Description</h2>
+          <textarea
+            class="input"
+            v-model="test.description"
+            data-gramm_editor="false"
+            @change="onDescriptionChange"
+            placeholder="Enter here a description that will be shown to your testers."
+          ></textarea>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="MatcSection" data-dojo-attach-point="sectionTask">
+    <section class="section" data-dojo-attach-point="sectionTask">
       <div class="container">
-        <h2 data-nls="testSettingsTasks" class>Tasks</h2>
-        <TestSettings :pub="pub" :test="test" :app="app" @change="onTaskChange"/>
+        <div class="box is-shadowless">
+          <h2 data-nls="testSettingsTasks" class="title">Tasks</h2>
+          <TestSettings :pub="pub" :test="test" :app="app" @change="onTaskChange" />
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="MatcSection">
+    <section class="section">
       <div class="container">
-        <h2>Screen Recordings</h2>
-        <div class="row">
-          <div class="col-md-12" ref="sessionCntr"></div>
-        </div>       
+        <div class="box is-shadowless">
+          <h2 class="title">Screen Recordings</h2>
+          <div ref="sessionCntr"></div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="MatcSection">
+    <section class="section">
       <div class="container">
-        <h2>Comments</h2>
-        <Comment v-if="app" :appID="app.id" type="overview_test" reference="" contentID="" insertPosition="top"/>
+        <div class="box is-shadowless">
+          <h2 class="title">Comments</h2>
+          <Comment
+            v-if="app"
+            :appID="app.id"
+            type="overview_test"
+            reference
+            contentID
+            insertPosition="top"
+          />
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 <script>
 import Logger from "common/Logger";
 import DojoWidget from "dojo/DojoWidget";
-import css from 'dojo/css'
+import css from "dojo/css";
 import lang from "dojo/_base/lang";
 import DataFrame from "common/DataFrame";
 import BulletGraph from "common/BulletGraph";
 import TestSettings from "views/apps/test/TestSettings";
-import Table from 'common/Table'
+import Table from "common/Table";
 import Services from "services/Services";
-import Analytics from 'dash/Analytics'
+import Analytics from "dash/Analytics";
 // import DomBuilder from 'common/DomBuilder'
-import Plan from 'page/Plan'
-import Util from 'core/Util'
-import Comment from 'page/Comment'
+import Plan from "page/Plan";
+import Util from "core/Util";
+import Comment from "page/Comment";
 
 export default {
   name: "Test",
@@ -107,19 +111,18 @@ export default {
     Comment: Comment
   },
   computed: {
-    pub () {
-      return this.$route.meta && this.$route.meta.isPublic
+    pub() {
+      return this.$route.meta && this.$route.meta.isPublic;
     },
-    urlPrefix () {
+    urlPrefix() {
       if (this.pub) {
-        return 'examples'
+        return "examples";
       }
-      return 'apps'
+      return "apps";
     }
   },
   methods: {
     onTaskChange(test) {
-      console.debug("onTaskChange", test);
       this.$emit("change", lang.clone(test));
     },
     async onDescriptionChange() {
@@ -149,11 +152,11 @@ export default {
       this.logger.log(-1, "showSessions", "enter " + this.planGetTestCount());
 
       var maxTestsToShow = this.planGetTestCount();
-      let app = this.app
+      let app = this.app;
       var actionEvents = this.getActionEvents(new DataFrame(this.events));
       let events = actionEvents.as_array();
       var list = this._getTestList(events, this.annotation, this.test);
-      var urlPrefix = this.urlPrefix
+      var urlPrefix = this.urlPrefix;
 
       /**
        * Set flag to turn off play buttons
@@ -166,27 +169,31 @@ export default {
           t.canShow = false;
         }
       }
-      
+
       var tbl = this.$new(Table);
       tbl.setColumns([
         {
           query: "id",
           label: "#"
         },
-        {
+         {
           query: "status",
           label: this.getNLS("videoTableStatus")
+        },
+        {
+          query: "user",
+          label: this.getNLS("videoTableUser")
         },
         {
           query: "taskPerformance",
           label: "Successful Tasks",
           fct: function(td, row) {
             var names = row.taskNames;
-            css.add(td, "MatcDashTableTaskNameCntr");
+            css.add(td, "MatcDashTableTaskNameCntr tags");
             if (names && names.length > 0) {
               for (var r = 0; r < names.length; r++) {
                 var span = document.createElement("span");
-                css.add(span, "MatcDashTableTaskName");
+                css.add(span, "tag");
                 span.innerHTML = names[r];
                 td.appendChild(span);
               }
@@ -215,21 +222,26 @@ export default {
       tbl.setActions([
         {
           render: function(node, row) {
-              var group = document.createElement("div");
-              css.add(group, "MatcButtonGroup");
-              node.appendChild(group);
-              let play = document.createElement("a");
-              play.href = "#/" + urlPrefix + "/" + app.id + "/replay/" + row.session + ".html";
-              css.add(play, "MatcDashBoardPlay MatcButton");
-              play.innerHTML = '<span class="mdi mdi-play"></span>';
-              group.appendChild(play);            
+            var group = document.createElement("div");
+            node.appendChild(group);
+            let play = document.createElement("a");
+            play.href =
+              "#/" +
+              urlPrefix +
+              "/" +
+              app.id +
+              "/replay/" +
+              row.session +
+              ".html";
+            css.add(play, "button is-primary");
+            play.innerHTML = '<span class="mdi mdi-play"></span>';
+            group.appendChild(play);
           }
         }
       ]);
 
       tbl.placeAt(this.$refs.sessionCntr);
       tbl.setValue(list);
-    
     },
 
     _getTestList: function(events, annotatation, testSettings) {
@@ -239,7 +251,7 @@ export default {
        * Legacy
        */
       if (!testSettings.tasks) {
-        testSettings.tasks = [];    
+        testSettings.tasks = [];
       }
 
       var df = new DataFrame(events);
@@ -248,7 +260,6 @@ export default {
       let sessions = sessionGroup.data;
 
       var annoSession = new DataFrame(annotatation).groupBy("reference");
-      console.debug('anno', annoSession)
 
       var actionDF = this.getActionEvents(new DataFrame(events));
 
@@ -281,6 +292,13 @@ export default {
           }
         }
 
+
+        /** Since 2.4 we show also the user */
+        let user = session.data && session.data.length > 0 ? session.data[0].user : '-'
+        if (user && user.name) {
+          user = user.name
+        }
+
         var taskSuccess = tasksBySession.get(sessionID);
         if (!taskSuccess) {
           taskSuccess = 0;
@@ -288,6 +306,7 @@ export default {
 
         var item = {
           session: sessionID,
+          user: user,
           taskPerformance: taskSuccess + " / " + taskCount,
           taskNames: sessionTaskNames[sessionID],
           duration: Math.ceil(
@@ -322,7 +341,7 @@ export default {
   },
   async mounted() {
     this.logger = new Logger("Test");
-    this.modelService = Services.getModelService(this.$route)
+    this.modelService = Services.getModelService(this.$route);
     this.showBullet();
     this.showSessions();
     this.logger.info("mounted", "exit");

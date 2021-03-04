@@ -1,15 +1,12 @@
 
 <template>
   <div class="MatcTaskRecorder">
-    <div class="MatcMarginBottom" data-dojo-attach-point="wrapper">
+    <div data-dojo-attach-point="wrapper">
       <div data-dojo-attach-point="container">
-        <div class="MatcLeft MatcTaskRecorderInfoBox">
-          <h2>Record a Task flow</h2>
-          <p class="MatcLead">
-            {{nls.taskRecorder1}}
-          </p>
-
-          <ol class="MatcLead">
+        <h2 class="title">Record a Task flow</h2>
+        <p class="subtitle">{{nls.taskRecorder1}}</p>
+        <div class="content">
+          <ol style="margin-left: 16px">
             <li v-html="nls.taskRecorderStep1"></li>
             <li v-html="nls.taskRecorderStep3"></li>
             <li v-html="nls.taskRecorderStep4"></li>
@@ -18,22 +15,20 @@
       </div>
     </div>
 
-    <div style="padding-top:10px; height:50px">
-      <div class="MatcButtonBar" data-dojo-attach-point="btnBar">
-        <a class="MatcButton" data-dojo-attach-point="startBtn">Begin</a>
-        <a class="MactLinkButton" data-dojo-attach-point="cancelBTN">Cancel</a>
+    <div>
+      <div class="buttons mt-16" data-dojo-attach-point="btnBar">
+        <a class="button is-primary" data-dojo-attach-point="startBtn">Begin</a>
+        <a class="button is-text" data-dojo-attach-point="cancelBTN">Cancel</a>
       </div>
 
-      <div class="MatcButtonBar MatcHidden" data-dojo-attach-point="recordBar">
-        <div class>
-          <a class="MatcButton MatcButtonPassive" data-dojo-attach-point="stopBtn">Done</a>
-        </div>
+      <div class="buttons MatcHidden" style="margin-top: -32px" data-dojo-attach-point="recordBar">
+        <a class="button is-primary MatcButtonPassive" data-dojo-attach-point="stopBtn">Done</a>
       </div>
 
-      <div class="MatcButtonBar MatcMarginTop MatcHidden" data-dojo-attach-point="flowBar">
-        <a class="MatcButton" data-dojo-attach-point="saveBTN">Save</a>
-        <a class="MatcButton" data-dojo-attach-point="startBtn2">Record Again</a>
-        <a class="MatcLinkButton" data-dojo-attach-point="cancelBTN2">Cancel</a>
+      <div class="buttons MatcHidden" style="margin-top: -32px" data-dojo-attach-point="flowBar">
+        <a class="button is-primary" data-dojo-attach-point="saveBTN">Save</a>
+        <a class="button is-primary is-outlined" data-dojo-attach-point="startBtn2">Record Again</a>
+        <a class="button is-text" data-dojo-attach-point="cancelBTN2">Cancel</a>
       </div>
     </div>
   </div>
@@ -55,6 +50,7 @@ export default {
   mixins: [Util, DojoWidget],
   data: function() {
     return {
+      hash: '',
       ignoredEvents: [
         "SessionStart",
         "ScreenAnimation",
@@ -72,7 +68,7 @@ export default {
   methods: {
     postCreate: function() {
       this.logger = new Logger("TaskRecorder");
-      this.logger.log(0, "postCreate", "enter > " + this.appID);
+      this.logger.log(-1, "postCreate", "enter > " + this.appID + "> " + this.hash);
       this.db = new DomBuilder();
       this.own(on(this.cancelBTN, touch.press, lang.hitch(this, "_close")));
       this.own(on(this.cancelBTN2, touch.press, lang.hitch(this, "_close")));
@@ -88,6 +84,7 @@ export default {
     },
 
     start: function() {
+
       this.container.innerHTML = "";
 
       this._flow = [];
@@ -95,6 +92,7 @@ export default {
 
       var cntr = this.db.div("MactCenter").build(this.container);
       var pos = this.resizeSimulatorContainer(this.model, cntr, 0.7);
+
       /**
        * hack because somehow the overflow is hidden
        */
@@ -110,16 +108,20 @@ export default {
        * Because of the fixed positions we have to wait a little
        * to render the simulator
        */
-      var me = this;
-      setTimeout(function() {
-        me.showButtonBar(me.recordBar);
-        me.simulator = me.$new(Simulator,{ mode: "recordFlow", logData: false });
-        me.tempOwn(on(me.simulator, "event", lang.hitch(me, "onEvent")));
-        me.simulator.placeAt(cntr)
-        me.simulator.scrollListenTarget = "parent";
-        me.simulator.startup();
-        me.record();
-        me.simulator.setModel(me.model);
+
+      setTimeout(() => {
+        this.showButtonBar(this.recordBar);
+        this.simulator = this.$new(Simulator, {
+          mode: "recordFlow",
+          logData: false
+        });
+        this.simulator.setHash(this.hash)
+        this.tempOwn(on(this.simulator, "event", lang.hitch(this, "onEvent")));
+        this.simulator.placeAt(cntr);
+        this.simulator.scrollListenTarget = "parent";
+        this.simulator.startup();
+        this.record();
+        this.simulator.setModel(this.model);
       }, 400);
     },
 
@@ -247,7 +249,9 @@ export default {
           }
           var tr = this.db.tr(row).build(tbody);
 
-          var chkCntr = this.db.td("MatcTaskRecorderFlowListCheckCntr").build(tr);
+          var chkCntr = this.db
+            .td("MatcTaskRecorderFlowListCheckCntr")
+            .build(tr);
           let chkBx = this.$new(CheckBox);
           chkBx.placeAt(chkCntr);
           if (i === 0 || i === flow.length - 1 || existingFlow) {

@@ -3,7 +3,7 @@
         "id" : "UploadPreview",
         "type" : "UploadPreview",
         "category" : "WireFrame",
-        "subcategory" : "AFormImage",
+        "subcategory" : "XBoxCamera",
         "_type" : "Widget",
         "name" : "Camerea Image",
         "x" : 0,
@@ -13,11 +13,12 @@
         "z" : 0,
         "props" : {},
         "has" : {
+            "backgroundColor" : true,
            "onclick" : true,
            "border":true
         },
         "actions":{},
-        "style" : { 	
+        "style" : {
             "borderTopRightRadius" : 0,
             "borderTopLeftRadius" : 0,
             "borderBottomRightRadius" : 0,

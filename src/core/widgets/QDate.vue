@@ -27,8 +27,8 @@ export default {
     return {
       value: null,
       month_names: [
-        "Januar",
-        "Februar",
+        "January",
+        "February",
         "March",
         "April",
         "May",
@@ -110,6 +110,7 @@ export default {
         this.value.view = this.createQDate(year, month, day);
         this.setValue(this.value);
       } else {
+        // FIXME: Here should actually set a view data
         d = this.createQDate(year, month, day);
         this.setValue(d);
       }
@@ -121,18 +122,18 @@ export default {
      * The selection flag will indicate if we can close the
      * popup.
      */
-    emitStateChange: function(type, value, e, selection) {
+    emitStateChange (type, value, e, selection, runTransition = true) {
       var event = {
         type: type,
         value: value,
-        runTransition: true,
+        runTransition: runTransition,
         e: e,
         selection: selection
       };
       this.emit("stateChange", event);
     },
 
-    render: function(model, style, scaleX, scaleY) {
+    render (model, style, scaleX, scaleY) {
       this.model = model;
       this.style = style;
       this._scaleX = scaleX;
@@ -255,6 +256,7 @@ export default {
         this.tds.push(td);
         this.tblHeaderTds.push(td);
       }
+
       for (let i = 0; i < 35; i++) {
         if (i % 7 == 0) {
           tr = db.tr().build(tbl);
@@ -297,12 +299,7 @@ export default {
 
           td.innerHTML = lbl;
           if (lbl != "" && this.mode == "simulator") {
-            this.tempOwn(
-              this.addClickListener(
-                td,
-                lang.hitch(this, "onSelect", lbl, month, year)
-              )
-            );
+            this.tempOwn( this.addClickListener(td, lang.hitch(this, "onSelect", lbl, month, year)));
           }
         }
         this.tds.push(td);
@@ -321,13 +318,14 @@ export default {
     /**
      * d = js date(legacy) or qdate
      */
-    renderSelectedDay: function(qDate, inRange) {
+    renderSelectedDay (qDate, inRange) {
       var d = this.convertQDateToDate(qDate);
 
       var key = this.getKey(d);
       if (this.dayTds && this.dayTds[key]) {
         var td = this.dayTds[key];
         var style = this.style;
+
         if (inRange && style.selectedInRangeBackground) {
           td.style.background = style.selectedInRangeBackground;
         } else if (style.selectedBackground) {
@@ -339,6 +337,7 @@ export default {
         } else if (style.selectedColor) {
           td.style.color = style.selectedColor;
         }
+
       }
     },
 

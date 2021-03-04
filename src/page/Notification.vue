@@ -45,7 +45,6 @@ export default {
 			async loadNotifications (){
 				let result = await Services.getUserService().getNotications()
 				this.setNotifications(result)
-				// this._doGet("/rest/notifications.json", "setNotifications");
 			},
 			
 			setNotifications (notifications){
@@ -55,7 +54,7 @@ export default {
 				}
 			},
 			
-			renderNotifications  (notifications){
+			async renderNotifications  (notifications){
 				this.logger.log(3, "renderNotifications", "enter");
 				var db = new DomBuilder()
 				
@@ -67,7 +66,7 @@ export default {
 				 * TODO: Filter by category...
 				 */
 				
-				var lastNoticationView = this.getLastView();
+				var lastNoticationView = await this.getLastView();
 				var newNotifications = 0;
 				var cntr = db.div().build();
 				for(var i=0; i < Math.min(notifications.length, 10); i++ ){
@@ -92,19 +91,15 @@ export default {
 						} else {
 							this.tempOwn(on(item, "click", lang.hitch(this, "runNothing", notification)));
 						}
-					}
-					
-					
+					}	
 					if (notification.lastUpdate > lastNoticationView){
 						newNotifications++;
 					}
 				}
 				this.popup.appendChild(cntr);
-				
 				if (newNotifications > 0){
 					this.bubble = db.div("MatcNotificationBubble", newNotifications).build(this.button);
 				}
-				
 			},
 			
 			runMore (n, e){
@@ -146,7 +141,6 @@ export default {
 			runNothing (n, e){
 				this.stopEvent(e);
 				this.hideDropDown();
-				console.debug("runNothing", n);
 			},
 			
 			runAction (n, e){
@@ -169,7 +163,6 @@ export default {
 			
 			async getLastView () {
 				let result = await Services.getUserService().getLastNotication()
-				// var result = this._doGet("/rest/user/notification/last.json");
 				if (this.debug){
 					return 0;
 				}

@@ -21,7 +21,7 @@ export default {
       dojoInited: false
     };
   },
-  methods: {   
+  methods: {
     stopPropagation (e) {
       if (e && e.stopPropagation){
         e.stopPropagation()
@@ -36,14 +36,17 @@ export default {
       } catch (err){
         console.warn('DojoWidget.stopEvent', err, e)
       }
-     
+
     },
     $new(cls, params) {
       var ComponentClass = Vue.extend(cls);
       var instance = new ComponentClass();
-      for (let key in params){       
-        instance[key] = params[key]        
+      for (let key in params){
+        instance[key] = params[key]
       }
+      /**
+       * FIMXE: pass here some how the NLS stuff
+       */
       instance.$mount(); // pass nothing
       return instance;
     },
@@ -69,13 +72,17 @@ export default {
     initDomNodes() {
       this.domNode = this.$el;
       if (this.domNode) {
-        let attachPoints = this.domNode.querySelectorAll("[data-dojo-attach-point]");      
-        attachPoints.forEach(element => {
-          let name = element.getAttribute("data-dojo-attach-point");
-          if (!this[name]) {
-            this[name] = element;
-          }
-        });
+        if (this.domNode.querySelectorAll) {
+          let attachPoints = this.domNode.querySelectorAll("[data-dojo-attach-point]");
+          attachPoints.forEach(element => {
+            let name = element.getAttribute("data-dojo-attach-point");
+            if (!this[name]) {
+              this[name] = element;
+            }
+          });
+        } else {
+          console.warn('initDomNodes', this.domNode)
+        }
       } else {
         console.warn('no domnode for', this.name)
       }
@@ -150,7 +157,7 @@ export default {
           }
         });
       }
-     
+
     },
     on(event, callback) {
       if (!this._dojoWidgetEventListener[event]) {
@@ -348,10 +355,10 @@ export default {
       if (!this.$options.name) {
         console.warn('No name for widget', this)
       }
-      // this.logger = new Logger(this.$options.name);      
+      // this.logger = new Logger(this.$options.name);
     },
-    /** 
-     * Message sending stuff 
+    /**
+     * Message sending stuff
      */
     showHint (msg) {
       this.$root.$emit('hint', msg)
@@ -359,40 +366,50 @@ export default {
     showError (msg) {
       this.$root.$emit('error', msg)
     },
-    showSuccess (msg) {    
+    showSuccess (msg) {
       this.$root.$emit('Success', msg)
     },
     /**
      * Helper
      */
-
 		stripHTML:function(s){
 			if(!s)
 				s="";
 			s = s.replace(/<\/?[^>]+(>|$)/g, "");
-			s = s.replace(/%/g, "$perc;"); // Mongo cannot deal with % on undo
+			s = s.replace(/%/g, "$perc;");
 			return s;
 		},
-		
+
 		unStripHTML:function(s) {
 			if(!s){
 				s="";
 			}
-			s = s.replace(/\$perc;/g, "%"); 
+			s = s.replace(/\$perc;/g, "%");
 			return s;
 		},
-		
+
 		setInnerHTML:function(e, txt){
 			if(e){
 				txt =  this.stripHTML(txt);
 				txt =txt.replace(/\n/g, "<br>");
-				txt =txt.replace(/\$perc;/g, "%"); // Mongo cannot deal with % on undo
+				txt =txt.replace(/\$perc;/g, "%");
 				e.innerHTML = txt;
 			} else {
 				console.warn("setInnerHTML() > No node to set test > ", txt);
 			}
-		},
-		
+    },
+
+    setTextContent (e, txt) {
+	    if(e){
+				txt =  this.stripHTML(txt);
+				txt =txt.replace(/\n/g, "<br>");
+				txt =txt.replace(/\$perc;/g, "%");
+				e.textContent = txt;
+			} else {
+				console.warn("setTextContent() > No node to set test > ", txt);
+			}
+    },
+
 		_getStatus:function(key){
 		  if (typeof(Storage) !== "undefined") {
         let value = localStorage.getItem(key);
@@ -401,26 +418,31 @@ export default {
         }
       }
 		},
-		
+
 		_setStatus:function(key, value){
       if (typeof(Storage) !== "undefined") {
         localStorage.setItem(key, JSON.stringify(value));
       }
     },
     _getMousePosition: function(e){
+      // updated and synced with simulator
+      // in case of error roll back and change mixin order in simulator
+      var result = {x: 0, y: 0};
       if (e) {
-        var result = {};
-        if (e.touches) {
+		    if (e.touches && e.touches.length > 0) {
           e = e.touches[0]
+          result.x = e.clientX;
+          result.y = e.clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0 ) {
+          e = e.changedTouches[0]
           result.x = e.clientX;
           result.y = e.clientY;
         } else {
           result.x = e.pageX;
           result.y = e.pageY;
         }
-        return result;
-      } 
-      return {x: 0, y: 0};
+      }
+      return result;
     },
     destroy () {
       this._dojoCleanUpOwn();
@@ -466,7 +488,7 @@ export default {
       this.startup();
       this.postCreate();
       this.dojoInited = true
-    }  
+    }
   }
 };
 </script>

@@ -1,17 +1,17 @@
 <template>
   <div class="VommondContentContainer">
-    
+
 
     <div class="MatcContent MatcAbout ">
       <div class="MatcSection">
         <div class="container" v-if="user">
           <h2>My Account</h2>
-    
+
           <p class="MatcLead MatcMarginBottomXL">
             Change your personal settings here!
           <p>
           <div class="row">
-            
+
             <div class="col-md-6">
               <div data-dojo-type="de/vommond/Form">
                 <div class="form-group">
@@ -34,21 +34,21 @@
                   <input type="password" class="form-control  input-lg" v-model="password" placeholder="To change, enter new password">
                 </div>
 
-               
+
                 <div class="form-group">
                   <label>Newsletter</label>
                   <div>
                   <CheckBox v-model="user.newsletter" label="I want to receive the newsletter"/>
                   </div>
                 </div>
-                
+
                 <div class="VommondFormErrorLabel">
                     {{error}}
                 </div>
 
                 <div class="MatcButtonBar">
                   <a class="MatcButton" @click="save">Save</a>
-                  <a class href="#/myApps.html">Cancel</a>
+                  <a class href="#/my-apps.html">Cancel</a>
                 </div>
               </div>
             </div>
@@ -59,7 +59,7 @@
               <div class="col-md-1 col-md-offset-1">
                   <a class="MatcButton MatcButtonRed" @click="retire">Delete</a>
               </div>
-    
+
           </div>
       </div>
       </div>
@@ -133,7 +133,7 @@ export default {
             this.$root.$emit('logout')
         }));
     },
-    
+
     async save() {
       this.logger.log(0, "save", "entry");
       let data = {
@@ -159,11 +159,10 @@ export default {
   },
   async mounted() {
     this.logger = new Logger("Finish");
-    Services.getUserService().load().then(user => {
-        Services.getUserService().loadById(user.id).then(full => {
-            this.user = full
-            this.logger.info("mounted", "exit >> " + this.user.email);
-        })
+    let user = Services.getUserService().load()
+    Services.getUserService().loadById(user.id).then(full => {
+      this.user = full
+      this.logger.info("mounted", "exit >> " + this.user.email);
     })
   }
 };

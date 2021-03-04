@@ -1,4 +1,3 @@
-
 <template>
   <div class="MatcWidgetTypeDropDown">
     <div data-dojo-attach-point="button" class="MatcWidgetTypeDropDownCntr">
@@ -48,9 +47,7 @@ export default {
         this.addClickListener(this.domNode, lang.hitch(this, "onOpenPopup"))
       );
       //this.own(on(this.domNode, touch.press, lang.hitch(this, "onOpenPopup")));
-      this.own(
-        on(this.domNode, touch.over, lang.hitch(this, "onDomMouseOver"))
-      );
+      this.own(on(this.domNode, touch.over, lang.hitch(this, "onDomMouseOver")));
       this.own(on(this.domNode, touch.out, lang.hitch(this, "onDomMouseOut")));
       this.wired = true;
     },
@@ -162,7 +159,7 @@ export default {
           css.add(this.icon, "MatcWidgetTypeDropDownIcon " + model.props.icon);
           this.labelCntr.appendChild(this.icon);
 
-          css.add(this.domNode, "MatcWidgetTypeDropDownWithIcon");
+          css.add(this.domNode, "MatcWidgetTypeDropDownWithIcon MatcWidgetTypeDropDownNoText");
           this.button.style.padding = "0px";
           this.button.style.borderRadius = "0px";
 
@@ -177,10 +174,7 @@ export default {
         } else {
           css.remove(this.caret, "MatcWidgetTypeDropDownCarret");
           this.caret.style.border = "none";
-          css.add(
-            this.caret,
-            model.props.icon + " MatcWidgetTypeDropDownCarretIcon"
-          );
+          css.add(this.caret, model.props.icon + " MatcWidgetTypeDropDownCarretIcon");
         }
       }
     },
@@ -250,14 +244,10 @@ export default {
             .div("MatcWidgetTypeDropDownOption", option)
             .build(this.popup);
 
-          node.style.paddingTop =
-            this._getBorderWidth(this.style["paddingTop"]) + "px";
-          node.style.paddingLeft =
-            this._getBorderWidth(this.style["paddingLeft"]) + "px";
-          node.style.paddingRight =
-            this._getBorderWidth(this.style["paddingRight"]) + "px";
-          node.style.paddingBottom =
-            this._getBorderWidth(this.style["paddingBottom"]) + "px";
+          node.style.paddingTop = this._getBorderWidth(this.style["paddingTop"]) + "px";
+          node.style.paddingLeft = this._getBorderWidth(this.style["paddingLeft"]) + "px";
+          node.style.paddingRight = this._getBorderWidth(this.style["paddingRight"]) + "px";
+          node.style.paddingBottom = this._getBorderWidth(this.style["paddingBottom"]) + "px";
 
           if (this.value == option) {
             if (style.selectedOptionColor) {
@@ -269,12 +259,8 @@ export default {
           }
 
           if (this.wired) {
-            this.tempOwn(
-              on(node, touch.press, lang.hitch(this, "onSelect", option))
-            );
-            this.tempOwn(
-              on(node, touch.over, lang.hitch(this, "onMouseOverOption", i))
-            );
+            this.tempOwn(on(node, touch.press, lang.hitch(this, "onSelect", option)));
+            this.tempOwn(on(node, touch.over, lang.hitch(this, "onMouseOverOption", i)));
           }
           this.optionNodes.push(node);
         }
@@ -414,7 +400,7 @@ export default {
         this.validate(this.value, true);
       }
       if (this.label) {
-        this.setInnerHTML(this.label, this.value);
+        this.setTextContent(this.label, this.value);
       }
     },
 
@@ -495,6 +481,9 @@ export default {
     _set_caretColor: function(parent, style) {
       if (this.caret) {
         this.caret.style.color = style.caretColor;
+      }
+      if (this.icon) {
+        this.icon.style.color = style.caretColor;
       }
     },
 

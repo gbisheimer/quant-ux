@@ -72,7 +72,7 @@ export default {
 
     showDefaultValue: function() {
       if (this.model.props.label) {
-        this.setInnerHTML(this.label, this.model.props.label);
+        this.setTextContent(this.label, this.model.props.label);
         css.add(this.label, "MatcWidgetTypeDateDropDownDefaultLabel");
 
         if (this.isRange) {
@@ -220,6 +220,7 @@ export default {
     },
 
     onSelect: function(e) {
+
       /**
        * we have here two kind of events. The plus or minus button were pressed. In this
        * case we do not update the value and do not close. Alternativly a date was selected,
@@ -237,8 +238,8 @@ export default {
           noheat: true,
           e: e.e
         };
-        this.emit("stateChange", event);
         this.emitDataBinding(event.value);
+        this.emit("stateChange", event);
         this.setValue(event.value);
 
         /**
@@ -253,7 +254,7 @@ export default {
         var event = {
           type: "navigate",
           value: e.value,
-          runTransition: true,
+          runTransition: false,
           noheat: true,
           e: e.e
         };
@@ -331,7 +332,7 @@ export default {
             if (!value.defaultValue) {
               var from = this.convertQDateToString(value.from);
               var to = this.convertQDateToString(value.to);
-              this.setInnerHTML(this.label, from + " - " + to);
+              this.setTextContent(this.label, from + " - " + to);
             } else {
               this.showDefaultValue();
             }
@@ -341,7 +342,7 @@ export default {
             }
 
             if (!value.defaultValue) {
-              this.setInnerHTML(this.label, this.convertQDateToString(value));
+              this.setTextContent(this.label, this.convertQDateToString(value));
             } else {
               this.showDefaultValue();
             }

@@ -19,24 +19,24 @@ export default {
 			if(this.$refs.message){
 				css.add(this.$refs.message, "vommondMessageSuccess");
 				css.remove(this.$refs.message, "vommondMessageError vommondMessageHint");
-				this.$refs.message.innerHTML = msg;				
+				this.$refs.message.innerHTML = msg;
 				setTimeout( () => {
 					this.hideMessage()
 				},2000);
-			}			
+			}
 		},
-		
+
 	showError:function(msg){
 		if(this.message){
 				css.add(this.$refs.message, "vommondMessageError");
 				css.remove(this.$refs.message, "vommondMessageSuccess vommondMessageHint");
-				this.$refs.message.innerHTML = msg;				
+				this.$refs.message.innerHTML = msg;
 				setTimeout( () => {
 					this.hideMessage()
 				},4000);
 		}
 	},
-	
+
 	showHint:function(msg){
 		if(this.$refs.message){
 			css.add(this.$refs.message, "vommondMessageHint");
@@ -47,12 +47,31 @@ export default {
 			},4000);
 		}
 	},
-	
+
 	hideMessage:function(){
 		css.remove(this.$refs.message, "vommondMessageSuccess vommondMessageError vommondMessageHint");
+	},
+
+	handler4xx (url, res) {
+		if (res.status === 401) {
+			alert('Something is wrong. Please login again!')
+			Services.getUserService().logout()
+			this.$router.push('/')
+			this.$root.$emit('MatcLogout', Services.getUserService().GUEST)
+		}
+		if (res.tokenTimedOut) {
+			alert('Your session has expired. Please login again')
+			Services.getUserService().logout()
+			this.$router.push('/')
+			this.$root.$emit('MatcLogout', Services.getUserService().GUEST)
+		}
 	}
   },
-  mounted () {    
+  mounted () {
+		Services.getUserService().load()
+		Services.setErrorHandler((url, res) => {
+			this.handler4xx(url, res)
+		})
     this.$root.$on('Success', (msg) => {
       this.showSuccess(msg)
     })
@@ -61,11 +80,14 @@ export default {
     })
     this.$root.$on('Hint', (msg) => {
       this.showHint(msg)
-	})
-	this.$root.$on('UserLogin', (user) => {
-		Services.getUserService().setUser(user)
-    })
-	css.remove(win.body(), 'MatcPublic')
+		})
+		this.$root.$on('UserLogin', (user) => {
+			Services.getUserService().setUser(user)
+		})
+		css.remove(win.body(), 'MatcPublic')
+
+		let language = Services.getUserService().getLanguage()
+		this.$root.$i18n.locale = language
   }
 }
 </script>

@@ -3,7 +3,7 @@
 	"type" : "Repeater",
 	"name" : "Grid",
 	"category" : "WireFrame",
-	"subcategory" : "FormSpecial",
+	"subcategory" : "FormSpecialContainer",
 	"_type" : "Widget",
 	"x" : 0,
 	"y" : 0,
@@ -13,8 +13,8 @@
 	"props" : {
 		"data": [],
 		"auto": true,
-		"rows": 10,
-		"columns": 2,
+		"rows": -1,
+		"columns": -1,
 		"layout": "rows",
 		"distanceX": 8,
 		"distanceY": 8

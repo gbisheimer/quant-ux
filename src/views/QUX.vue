@@ -8,7 +8,11 @@
   </div>
 </template>
 <style>
-  @import url("../../public/style/matc.css");
+  @import url("../style/matc.css");
+  @import url("../style/qux.css");
+</style>
+<style lang="sass">
+  @import "../style/bulma.sass";
 </style>
 <script>
 import LoginPage from 'views/LoginPage'
@@ -22,7 +26,7 @@ export default {
   name: "home",
   mixins: [],
  data: function() {
-    return {     
+    return {
       user: {
         id: -1,
         name: "Guest",
@@ -64,12 +68,20 @@ export default {
       css.remove(win.body(), 'MatcVisualEditor')
       css.remove(win.body(), 'MatcLight')
       this.scrollTop()
+      if (this.$route.meta.isDarkHeader) {
+				css.add(win.body(), 'MatcDarkHeaderPage')
+			} else {
+				css.remove(win.body(), 'MatcDarkHeaderPage')
+			}
     }
   },
   async mounted() {
     this.logger = new Logger('MATC')
-    this.user = await Services.getUserService().load()
-    this.logger.info('mounted', 'exit >> ' + this.user.email)
+    this.user = Services.getUserService().load()
+    this.logger.log(-1, 'mounted', 'exit >> ' + this.user.email + " >> locale: " + navigator.language)
+    this.$root.$on('MatcLogout', (user) => {
+				this.onLogout(user)
+    })
   }
 };
 </script>

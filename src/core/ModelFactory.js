@@ -60,7 +60,7 @@ export default class ModelFactory {
 	createTemplatedGroup(t) {
 		var model = {
 			id: t.id,
-			name: "",
+			name: t.name,
 			template: t.id,
 			children: lang.clone(t.children)
 		};
@@ -80,9 +80,10 @@ export default class ModelFactory {
 			};
 			this.logger.sendError(new Error());
 		}
-	
+
 		var grid = 8;
 		var model = {
+			version: 2.1,
 			name: name,
 			description: des,
 			screenSize: type.screenSize,
@@ -90,6 +91,7 @@ export default class ModelFactory {
 			screens: {},
 			widgets: {},
 			lines: {},
+			groups: {},
 			lastUUID: 10000,
 			lastUpdate: 0,
 			created: 0,
@@ -108,7 +110,7 @@ export default class ModelFactory {
 
 
 	/**********************************************************************
-	 * Screen 
+	 * Screen
 	 **********************************************************************/
 
 	createScreenModel() {

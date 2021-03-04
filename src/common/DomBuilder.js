@@ -382,6 +382,42 @@ export default class DomBuilder {
 		return this.setStyle("marginRight", m + "px");
 	}
 
+	paddingRight (m) {
+		return this.setStyle("paddingRight", m + "px");
+	}
+
+	paddingLeft (m) {
+		return this.setStyle("paddingLeft", m + "px");
+	}
+
+	paddingTop (m) {
+		return this.setStyle("paddingTop", m + "px");
+	}
+
+	background (m) {
+		return this.setStyle("background", m);
+	}
+
+	borderWidth (m) {
+		return this.setStyle("borderWidth", m + "px");
+	}
+
+	borderColor (m) {
+		return this.setStyle("borderColor", m);
+	}
+
+	borderRadius (m, unit='px') {
+		return this.setStyle("borderRadius", m + unit);
+	}
+
+	paddingBottom (m) {
+		return this.setStyle("paddingBottom", m + "px");
+	}
+
+	fontSize (m) {
+		return this.setStyle("fontSize", m + "px");
+	}
+
 	setStyle(key, value) {
 		if (this.current) {
 			this.current.style[key] = value;

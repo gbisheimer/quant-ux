@@ -10,6 +10,8 @@ import UIWidget from "core/widgets/UIWidget";
 import DomBuilder from 'common/DomBuilder'
 import Core from 'core/Core'
 import lang from 'dojo/_base/lang'
+import JSONPath from 'core/JSONPath'
+import Logger from "common/Logger";
 
 export default {
   name: "Repeater",
@@ -19,7 +21,8 @@ export default {
         model: {
             props:{}
         },
-        hasXOverFlow: false
+        hasXOverFlow: false,
+        dataBindingValues: null
     };
   },
   computed: {
@@ -48,6 +51,7 @@ export default {
       this._borderNodes = [this.domNode];
       this._backgroundNodes = [this.domNode];
       this._shadowNodes = [this.domNode];
+      this.logger = new Logger('Repeater')
     },
 
     wireEvents () {
@@ -70,7 +74,7 @@ export default {
                 cursor: 'MatchResizeNorth',
                 id: 'DistanceY'
             })
-            if (this.model.props.layout !== 'rows') {
+            if (this.model.props.layout !== 'rows' && this.model.props.auto === false) {
                 handlers.push({
                     y: -10,
                     distanceY: this.distanceY,
@@ -151,18 +155,23 @@ export default {
     },
 
     update (widget) {
+        /**
+         * We should have here some kind of fast rendering!
+         */
         this.render(widget, this.style, this._scaleX, this._scaleY)
     },
 
     render (widget, style, scaleX, scaleY) {
       /**
        * This is super slow for fast rendering, as we will redraw everzthing. We must
-       * therefore reuse the items or have some kind of rerender() method if the 
+       * therefore reuse the items or have some kind of rerender() method if the
        * isUpdate parameter is set
        */
       this.model = widget;
+      this.setDataBindingFromTable(widget)
       /**
-       * Property changes will not send children.
+       * The widgets come from the getInhereitedMethod...
+       * Property changes will not always send children.
        * FIXME: in BaseController.setWidget also add children?
        */
       if (widget.children) {
@@ -176,7 +185,8 @@ export default {
       this._scaleY = scaleY;
       this.setStyle(style, widget);
 
-      this.domNode.innerHTML = ""
+      this.removeAllChildren(this.domNode)
+      // this.domNode.innerHTML = ""
       this._childWidgets = []
       let db = new DomBuilder()
 
@@ -203,8 +213,7 @@ export default {
         let columns = this.getColumns(widget, cntrBox)
         let distanceX = this.getDistanceX(widget, columns, cntrBox)
         // console.debug('Repeater.render(Y) h:', widget.h,  ' > bb: ', cntrBox.h, ' > r ', rows, ' > dis ', distanceY, "=", cntrBox.h * rows + (rows-1) * distanceY)
-        // console.debug('Repeater.render(X)', widget.id, widget.w, cntrBox.w, columns, distanceX, "=", cntrBox.w * columns + (columns-1) * distanceX)
-
+        // console.debug('Repeater.render(X)', widget.id, widget.w, cntrBox.w, columns, distanceX, "=", cntrBox.w * columns + (columns-1) * distanceX, widget)
 
         let cntrDiv = db.div('MatcWidgetTypeRepeaterGrid ' + widget.props.layout).build()
 
@@ -217,7 +226,19 @@ export default {
         let childWidgets = this.getChildWidgets(widget)
         let count = rows * columns
 
+        /**
+         * If we have a data binding, this gets priority
+         */
+        if (this.dataBindingValues && Array.isArray(this.dataBindingValues)) {
+            count = this.dataBindingValues.length
+        }
+
         for (let i = 0; i < count; i++) {
+                /**
+                 * We should have here something like smart rendering because in
+                 * this approach redraws all the widget for each rendering, also in the
+                 * fast rendering in canvas.
+                 */
                let marginRight = distanceX
                if (i % columns === columns -1) {
                    marginRight = 0;
@@ -236,7 +257,7 @@ export default {
                         let copy = lang.clone(childWidget)
                         copy.inherited = childWidget.id
                         copy.id = childWidget.id + '-' + i
-                        this.addDataBinding(i, copy, widget)
+                        copy.dataBingingIndex = i
                         let top = (childWidget.y - cntrBox.y) + offsetTop
                         let left = (childWidget.x - cntrBox.x) + offsetLeft
 
@@ -251,6 +272,17 @@ export default {
                             div: div
                         })
                         this.factory.createWidgetHTML(div, copy);
+
+                        /**
+                         * We also set the databinging value here!
+                         */
+                        let uiWidget =  this.factory.getUIWidgetByID(copy.id)
+                        if (uiWidget) {
+                            let dbValue = this.getDataBindingValue(i, copy, widget)
+                            if (dbValue) {
+                                uiWidget.setDataBinding(dbValue.variable, dbValue.value)
+                            }
+                        }
                     })
                 }
         }
@@ -263,23 +295,32 @@ export default {
       }
     },
 
-    addDataBinding (i, child, widget) {
-        if (widget.props.data && child.props.databinding && child.props.databinding.default){
-            if (widget.props.data && widget.props.data.length > 1) {
-                let header = widget.props.data[0]
-                let row = widget.props.data[i + 1]
-                if (row) {
-                    let colName = child.props.databinding.default
-                    let col = header.indexOf(colName)
-                    let value = row[col]
-                    if (value != undefined) {
-                        let label = child.props.label
-                        if (label.indexOf("{0}") >= 0) {
-                            label = label.replace("{0}", value);
-                        } else {
-                            label = value
+    getDataBindingValue (i, child) {
+        if (this.dataBindingValues) {
+            if (child.props.databinding && child.props.databinding.default){
+                let key = child.props.databinding.default
+                let path = key
+                /**
+                 * We remove the parent path here if needed. The varibale must stay
+                 * the same, otherwise the UIWidget.setDataBining() will not work
+                 */
+                if (this.model.props.databinding && this.model.props.databinding.default && key.indexOf('[0].') > 0) {
+                    let parentKey = this.model.props.databinding.default
+                    if (key.indexOf(parentKey) === 0) {
+                        path = key.substring(key.indexOf('.') + 1)
+                    }
+                }
+                /**
+                 * Data Binding has priority
+                 */
+                if (this.dataBindingValues && this.dataBindingValues.length > i) {
+                    let row = this.dataBindingValues[i]
+                    let value = JSONPath.get(row, path)
+                    if (value !== null && value != undefined) {
+                        return {
+                            variable: key,
+                            value: value
                         }
-                        child.props.label = label
                     }
                 }
             }
@@ -315,49 +356,58 @@ export default {
         return distance
     },
 
-
     getColumns (widget, cntrBox) {
         if (widget.props.layout === 'rows') {
             return 1;
         }
         let columns = widget.props.columns
-
-        if (!columns || columns <= 0 || widget.props.auto) {
-            let w = cntrBox.w
-            if (widget.props.distanceX > 0 && !widget.props.auto) {
-                let distance = Math.round(widget.props.distanceX * this._scaleX)
-                columns = Math.ceil((widget.w - distance) / (w + distance))
-            } else {
-                columns = Math.floor(widget.w / w)
-            }
+        if (columns >= 0) {
+            this.logger.warn('getColumns()', 'Row > not supported!')
         }
-        // console.debug('Repeater.columns', columns)
+
+        let w = cntrBox.w
+        if (widget.props.distanceX > 0 && !widget.props.auto) {
+            /**
+             * This takes too the distance on the last element into account!
+             * widget.w = columns * w + (columns - 1) * distanceX
+             * widget.w = columns * w + columns * distanceX  + -1 * distanceX
+             * widget.w = columns * w + columns * distanceX  - distanceX
+             * widget.w + distanceX = columns * w + columns * distanceX
+             * widget.w + distanceX = columns * (w + distanceX)
+             * widget.w + distanceX  / (w + disanceX) = columns
+             */
+            let distance = Math.round(widget.props.distanceX * this._scaleX)
+            columns = Math.floor((widget.w + distance) / (w + distance))
+        } else {
+            columns = Math.floor(widget.w / w)
+        }
+
+        this.logger.log(3, 'getColumns()', 'exit', columns)
         return columns
     },
 
     getRows (widget, cntrBox) {
         let rows = widget.props.rows * 1
-        if (!rows || rows <= 0 || widget.props.auto === true) {
-
-            let h = cntrBox.h
+        /** Since 2.4.0 we do not consider the row statement */
+        if (rows >= 0) {
+            this.logger.warn('getRows()', 'Row > not supported!')
+        }
+        let h = cntrBox.h
+        if (widget.props.distanceY > 0 && !widget.props.auto) {
             /**
              * This takes too the distance on the last element into account!
              * widget.h = rows * h + (rows - 1) * distanceY
              * widget.h = rows * h + rows * distanceY - distanceY
-             * widget.h - distanceY = rows * h + rows * distanceY
-             * widget.h - distanceY = rows * (h + distanceY)
-             * (widget.h - distanceY) / (h + distanceY) = rows
+             * widget.h + distanceY = rows * h + rows * distanceY
+             * widget.h + distanceY = rows * (h + distanceY)
+             * (widget.h + distanceY) / (h + distanceY) = rows
              */
-            if (widget.props.distanceY > 0 && !widget.props.auto) {
-                let distance = Math.round(widget.props.distanceY * this._scaleY)
-                rows = Math.ceil((widget.h - distance) / (h + distance))
-            } else {
-                rows = Math.floor(widget.h / h)
-            }
+            let distance = Math.round(widget.props.distanceY * this._scaleY)
+            rows = Math.ceil((widget.h + distance) / (h + distance))
+        } else {
+            rows = Math.floor(widget.h / h)
         }
-        if (!this.isSimulator){
-            //rows = Math.min(rows,  Math.ceil(widget.h / cntrBox.h))
-        }
+        this.logger.log(3, 'getRows()', 'exit', rows)
         return rows
     },
 
@@ -366,10 +416,53 @@ export default {
     setValue () {},
 
     getState () {
-      return {};
+      if (this.dataBindingFromExternal) {
+        return {
+            'dataBindingValues': this.dataBindingValues
+        };
+      }
     },
 
-    setState () {}
+    setState (state) {
+        if (state && state.dataBindingValues) {
+            this.dataBindingValues = state.dataBindingValues
+            if (this.model) {
+                this.render(this.model, this.style, this._scaleX, this._scaleY)
+            }
+        }
+    },
+
+    _setDataBindingValue (v) {
+      this.dataBindingValues = v
+      this.dataBindingFromExternal = true
+      this.render(this.model, this.style, this._scaleX, this._scaleY)
+    },
+
+    getOutputDataBindingValue (index) {
+        if (this.dataBindingValues) {
+            return this.dataBindingValues[index]
+        }
+    },
+
+    setDataBindingFromTable (widget) {
+        if (!this.dataBindingValues && !this.databindingInitedFromTable) {
+             if (widget.props.data && widget.props.data.length > 1) {
+                let data = widget.props.data
+                this.dataBindingValues = []
+                let header = widget.props.data[0]
+                for (let r=1; r < data.length; r++) {
+                    let row = {}
+                    for (let c=0; c < header.length; c++) {
+                        let col = header[c]
+                        row[col] = data[r][c]
+                    }
+                    this.dataBindingValues.push(row)
+                }
+                this.databindingInitedFromTable = true
+             }
+        }
+    }
+
   },
   mounted() {}
 };

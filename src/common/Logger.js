@@ -9,7 +9,7 @@ var vommonLoggingDebugLevel = 0
 var vommondLoggingErros = 0
 
 export default class Logger {
-	
+
 	constructor(className) {
 		if (!className.toLowerCase) {
 			console.warn('Logger.constructor called with params', className)
@@ -18,12 +18,12 @@ export default class Logger {
 		this.serverDebugLevel = 2
 		this.prefix = null
 		this.url = "/rest/log/error"
-		this.className = className;		
+		this.className = className;
 	}
 
 	setUser (){
 	}
-	
+
 	writeQueue (){
 		var q = "";
 		try{
@@ -40,17 +40,23 @@ export default class Logger {
 		}
 		return q;
 	}
-	
-	
+
+
 	sendError (e){
 		var plugins = "";
 		for(var i=0;i<navigator.plugins.length;i++){
-			plugins+=navigator.plugins[i].name + "/n"; 
+			plugins+=navigator.plugins[i].name + "/n";
 		}
 
 		if(vommondLoggingErros < 10){
 			var q = this.writeQueue();
 			let u = Services.getUserService().getUser();
+			if (u) {
+				u = {
+					id: u.id,
+					email: u.email
+				}
+			}
 
 			var msg = {
 				level : 0,
@@ -65,22 +71,22 @@ export default class Logger {
 				plugins : plugins,
 				queue : q
 			};
-			
-			var params = {  
+
+			var params = {
 				handleAs: "json",
 				method : "post",
 				sync: false,
 				data : JSON.stringify(msg)
 			};
-			request(this.url, params).then(function (){	
-  
+			request(this.url, params).then(function (){
+
 			}, function(err){
 				console.warn("Logger.sendError() > could not send", err)
 			});
 			vommondLoggingErros++
 		}
 	}
-	
+
 	error (meth, message, error) {
 		var m = this.className + "." + meth;
 		console.error(m + " >> " + message);
@@ -89,32 +95,40 @@ export default class Logger {
 			console.error(error.stack);
 		}
 	}
-	
-	warn (method, message){
-		this.warning(0, method, message);
-	}	
+
+	warn (method, message, obj){
+		this.warning(0, method, message, obj);
+	}
 
 	info (method, message, data1){
 		this.log(1, method, message, data1);
-	}	
+	}
 
 	debug (method, message, data1){
 		this.log(4, method, message, data1);
-	}	
-	
-	warning (level,method, message){
+	}
+
+	warning (level,method, message, obj){
 		var m = this.className + "."+method;
 		if(vommonLoggingDebugLevel >= level){
 			if(this.prefix){
 				if(m.indexOf(this.prefix) == 0){
+					if (obj) {
+						console.warn(m + " >> " + message, obj);
+					} else {
+						console.warn(m + " >> " + message);
+					}
+				}
+			} else{
+				if (obj) {
+					console.warn(m + " >> " + message, obj);
+				} else {
 					console.warn(m + " >> " + message);
 				}
-			}else{
-				console.warn(m + " >> " + message);
 			}
-		}	
-	}	
-	
+		}
+	}
+
 	log (level, method, message, obj){
 		var m = this.className + "."+method;
 		if(vommonLoggingDebugLevel > level){
@@ -124,16 +138,16 @@ export default class Logger {
 						console.debug(m + " >> " + message, obj);
 					} else {
 						console.debug(m + " >> " + message);
-					}	
+					}
 				}
 			}else{
-				if (obj){
+				if (obj !== undefined){
 					console.debug(m + " >> " + message, obj);
 				} else {
 					console.debug(m + " >> " + message);
-				}	
+				}
 			}
-		}		
+		}
 
 		if(this.serverDebugLevel > level){
 			var entry = {
@@ -144,6 +158,6 @@ export default class Logger {
 			vommonLoggingQueuePos = (vommonLoggingQueuePos+1) % vommonLoggingQueueMax;
 		}
 
-	
+
 	}
 }

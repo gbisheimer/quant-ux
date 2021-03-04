@@ -21,13 +21,13 @@ export default {
     attachFontsToDom (fonts) {
       if (fonts) {
         let head = document.head || document.getElementsByTagName('head')[0];
-        fonts.forEach(f => {        
-          if (f) { 
+        fonts.forEach(f => {
+          if (f) {
             if (!_mactImportedFonts[f.url]){
               let css = this.getFontImportStatement(f)
               let style = document.createElement('style');
               style.type = 'text/css';
-              style.appendChild(document.createTextNode(css));   
+              style.appendChild(document.createTextNode(css));
               head.appendChild(style);
               _mactImportedFonts[f.url] = true
             }
@@ -37,12 +37,12 @@ export default {
     },
 
     getFontImportStatement(f) {
-      if (f.type !== 'import') {
+      if (f.type !== 'import' && f.url.indexOf('https://fonts.googleapis.com/') === -1 ) {
         return `
           @font-face {
             font-family: "${f.name}";
             src: url("${f.url}") format("${f.type}")
-          }`;  
+          }`;
       } else {
         return `@import url('${f.url}');`
       }
@@ -117,6 +117,53 @@ export default {
         return widget.props.databinding;
       }
     },
+
+    getAllAppVariables (){
+
+      var variables = [];
+      if (this.model) {
+        for(let id in this.model.widgets){
+          let widget = this.model.widgets[id];
+          if(widget.props && widget.props.databinding){
+            let databinding = widget.props.databinding;
+            for(let key in databinding){
+              let variable = databinding[key];
+              if(variables.indexOf(variable)<0){
+                variables.push(variable);
+              }
+            }
+          }
+          // the rest widget save at some oher place
+          if(widget.props && widget.props.rest && widget.props.rest.output){
+            let variable = widget.props.rest.output.databinding
+            if(variables.indexOf(variable)<0){
+                variables.push(variable);
+            }
+          }
+        }
+      }
+			return variables;
+    },
+
+    getHintsAppVariables (){
+
+      var variables = [];
+      if (this.model) {
+        for(var id in this.model.widgets){
+          var widget = this.model.widgets[id];
+          // the rest widget save at some oher place
+          if(widget.props && widget.props.rest && widget.props.rest.output){
+            let hints = widget.props.rest.output.hints;
+            if (hints) {
+              for (let key in hints) {
+                variables.push(key.replace(/_/g, '.'))
+              }
+            }
+          }
+        }
+      }
+			return variables;
+		},
 
     /**
      * Returns a fixed index for a timestamp, so we can use
@@ -211,6 +258,8 @@ export default {
 
       return CoreUtil.createZoomedModel(zoomX, zoomY, isPreview, this.model)
     },
+
+
 
     getZoomed: function(v, zoom) {
       //			if(this.doNotRoundForPreview){
@@ -371,23 +420,19 @@ export default {
             }
             return merged;
           } else {
-            console.warn(
-              "Layout.getStyle() > No template found for widget",
-              model.id,
-              " with template ",
-              model.template
-            );
+            console.warn("Layout.getStyle() > No template found for widget",model.id, " with template ",  model.template);
           }
         }
       }
       return model.style;
     },
 
+
     /**
      * Returns the inherited style. Mixing in the properties of the
      * parent widget.
      */
-    getInheritedStyle: function(model, widgetViewMode) {
+    getInheritedStyle (model, widgetViewMode) {
       if (model && model.parentWidget) {
         var parent = this.model.widgets[model.parentWidget];
         if (parent) {
@@ -397,12 +442,7 @@ export default {
           );
           return style;
         } else {
-          console.warn(
-            "Layout.getInheritedStyle() > No template found for widget",
-            model.id,
-            " with widgetViewMode ",
-            widgetViewMode
-          );
+          console.warn( "Layout.getInheritedStyle() > No template found for widget", model.id, " with widgetViewMode ",widgetViewMode);
         }
       }
       return model.style;
@@ -412,7 +452,7 @@ export default {
      * Gets the right line for a box. In case of
      * inherited widgets it takes the line of the parent
      */
-    getLineFrom: function(box) {
+    getLineFrom (box) {
       var boxID = box.id;
       if (box.inherited) {
         boxID = box.inherited;
@@ -432,7 +472,7 @@ export default {
      *
      * The lines are ordered by id, which might be wrong...
      */
-    getFromLines: function(box) {
+    getFromLines (box) {
       var result = [];
       for (var id in this.model.lines) {
         var line = this.model.lines[id];
@@ -446,13 +486,69 @@ export default {
       return result;
     },
 
-    getParentGroup: function(widgetID) {
+    getTopParentGroup (id) {
+      let group = this.getParentGroup(id)
+      if (group) {
+        while (group) {
+          let parent = this.getParentGroup(group.id)
+          if (parent) {
+            group = parent
+          } else {
+
+            /**
+             * Return here a virtual group. This is used in the DND._addDnDChildren()
+             */
+            let result = lang.clone(group)
+            result.children = this.getAllGroupChildren(group)
+            result._isTopParentGroup = true
+            return result
+          }
+        }
+      }
+      return null
+    },
+
+    getAllGroupChildren (group) {
+      if (!group.children) {
+        return []
+      }
+      let result = group.children.slice(0)
+      /**
+       * Check all sub groups
+       */
+      if (group.groups) {
+        group.groups.forEach(subId => {
+          let sub = this.model.groups[subId]
+          if (sub) {
+            let children = this.getAllGroupChildren(sub)
+            result = result.concat(children)
+          } else {
+            console.warn('getAllGroupChildren() No sub group', subId)
+          }
+        })
+      }
+      /**
+       * check if we have a parent group
+       */
+      return result
+    },
+
+    getParentGroup (widgetID) {
       if (this.model.groups) {
         for (var id in this.model.groups) {
           var group = this.model.groups[id];
-          var i = group.children.indexOf(widgetID);
+          let i = group.children.indexOf(widgetID);
           if (i > -1) {
             return group;
+          }
+          /**
+           * Since 2.13 we have subgroups and check this too
+           */
+          if (group.groups) {
+            let i = group.groups.indexOf(widgetID);
+            if (i > -1) {
+              return group;
+            }
           }
         }
       }
@@ -552,6 +648,13 @@ export default {
       return false;
     },
 
+    hasRest: function(box) {
+      if (box) {
+        return box.type == "Rest";
+      }
+      return false;
+    },
+
     hasOnClick: function(model) {
       if (model && model.has.onclick) {
         return true;
@@ -577,24 +680,8 @@ export default {
      * Layout Functions
      ***************************************************************************/
 
-    getOrderedWidgets: function(widgets) {
-      var result = [];
-      for (var id in widgets) {
-        var widget = widgets[id];
-        if (widget) {
-          this.fixMissingZValue(widget);
-          result.push(widget);
-        } else {
-          var e = new Error("getOrderedWidgets() > no widget with id " + id);
-          if (this.logger) {
-            this.logger.sendError(e);
-          }
-        }
-      }
-
-      this.sortWidgetList(result);
-
-      return result;
+    getOrderedWidgets (widgets) {
+      return CoreUtil.getOrderedWidgets(widgets)
     },
 
     /**
@@ -602,21 +689,8 @@ export default {
      *
      * Pass the children as parameter
      */
-    sortChildren: function(children) {
-      var result = [];
-      for (var i = 0; i < children.length; i++) {
-        var widgetID = children[i];
-        var widget = this.model.widgets[widgetID];
-        if (widget) {
-          this.fixMissingZValue(widget);
-          result.push(widget);
-        }
-      }
-
-      this.sortWidgetList(result);
-
-      //console.debug("sortChildren > ", result);
-      return result;
+    sortChildren (children) {
+        return CoreUtil.sortChildren(children, this.model)
     },
 
     /**
@@ -635,60 +709,11 @@ export default {
      *  4) id: if the z value is the same, sort by id, which means the order the widgets have been
      *  added to the screen.
      */
-    sortWidgetList: function(result) {
-      /**
-       * Inline function to determine if a widget is fixed.
-       * we have to check if style exists, because the Toolbar.onToolWidgetLayer()
-       * call the method without styles.
-       */
-      var isFixed = function(w) {
-        if (w.style && w.style.fixed) {
-          return true;
-        }
-        return false;
-      };
-
-      result.sort(function(a, b) {
-        var aFix = isFixed(a);
-        var bFix = isFixed(b);
-
-        /**
-         * 1) Sort by fixed. If both are fixed or not fixed,
-         * continue sorting by inherited.
-         */
-        if (aFix == bFix) {
-          /**
-           * If both a inherited or not inherited,
-           * continue sorting by z & id
-           */
-          if ((a.inherited && b.inherited) || (!a.inherited && !b.inherited)) {
-            /**
-             * 4) if the have the same z, sot by id
-             */
-            if (a.z == b.z && (a.id && b.id)) {
-              return a.id.localeCompare(b.id);
-            }
-
-            /**
-             * 3) Sort by z. Attention, Chrome
-             * needs -1, 0, 1 or one. > does not work
-             */
-            return a.z - b.z;
-          }
-          if (a.inherited) {
-            return -1;
-          }
-
-          return 1;
-        }
-        if (aFix) {
-          return 1;
-        }
-        return -1;
-      });
+    sortWidgetList (result) {
+      return CoreUtil.sortWidgetList(result)
     },
 
-    isFixedWidget: function(w) {
+    isFixedWidget (w) {
       if (w.style && w.style.fixed) {
         return true;
       }
@@ -702,7 +727,68 @@ export default {
       if (box.z === null || box.z === undefined) {
         box.z = 0;
       }
-    }
+    },
+
+    /**********************************************************************
+     * QDate methods!
+     **********************************************************************/
+
+
+    convertQDateToString: function(qdate) {
+      var d = this.convertQDateToDate(qdate);
+      return d.toLocaleDateString();
+    },
+
+    convertQDateToIsoString (qdate) {
+      var d = this.convertQDateToDate(qdate);
+      let month = d.getMonth() + 1
+      if (month < 10) {
+        month = '0' + month
+      }
+      return `${d.getFullYear()}-${month}-${d.getDate()}`
+    },
+
+    isEqualDate: function(a, b) {
+      if (a && b) {
+        return a.d == b.d && a.m == b.m && a.y == b.y;
+      }
+      return false;
+    },
+
+    isQDate: function(d) {
+      return d && d.d != null && d.m != null && d.y != null;
+    },
+
+    createNow: function() {
+      return this.convertDateToQdate(new Date());
+    },
+
+    createQDate: function(year, month, day) {
+      // use date object to parse correctly..
+      var d = new Date(year, month, day);
+      return this.convertDateToQdate(d);
+    },
+
+    convertDateToQdate: function(d) {
+      return {
+        d: d.getDate(),
+        m: d.getMonth(),
+        y: d.getFullYear()
+      };
+    },
+
+    convertQDateToDate: function(qdate) {
+      return new Date(qdate.y, qdate.m, qdate.d);
+    },
+
+    convertMillisToQDate: function(ms) {
+      var d = new Date(ms);
+      return this.convertDateToQdate(d);
+    },
+
+    convertQDateToMillis: function(qdate) {
+      return new Date(qdate.y, qdate.m, qdate.d).getTime();
+    },
   },
   mounted() {}
 };

@@ -32,12 +32,52 @@ export default class Templates extends BaseController{
 		}
 		
 		modelUpdateTemplate  (template, widget) {
-			for (var key in widget.style) {
-				var value = widget.style[key]
+			for (let key in widget.style) {
+				let value = widget.style[key]
 				template.style[key] = value
 				this.logger.log(0,"modelUpdateTemplate", "enter > " + key + " : "  + value);
 			}
 			widget.style = {};
+
+			if (widget.hover) {
+				let style = widget.hover
+				if (!template.hover) {
+					template.hover = {}
+				}
+				for (let key in style) {
+					let value = style[key]
+					template.hover[key] = value
+					this.logger.log(0,"modelUpdateTemplate", "enter > " + key + " : "  + value);
+				}
+				widget.hover = {};
+			}
+
+			if (widget.error) {
+				let style = widget.error
+				if (!template.error) {
+					template.error = {}
+				}
+				for (let key in style) {
+					let value = style[key]
+					template.error[key] = value
+					this.logger.log(0,"modelUpdateTemplate", "enter > " + key + " : "  + value);
+				}
+				widget.hover = {};
+			}
+
+			if (widget.focus) {
+				let style = widget.focus
+				if (!template.focus) {
+					template.focus = {}
+				}
+				for (let key in style) {
+					let value = style[key]
+					template.focus[key] = value
+					this.logger.log(0,"modelUpdateTemplate", "enter > " + key + " : "  + value);
+				}
+				widget.focus = {};
+			}
+
 			this.onModelChanged();
 			this.render();
 		}
@@ -95,6 +135,21 @@ export default class Templates extends BaseController{
 			var template = {};
 			template.id = "tw" + this.getUUID();
 			template.style = lang.clone(widget.style);
+			
+			if (widget.hover) {
+				template.hover = lang.clone(widget.hover);
+			}
+			if (widget.error) {
+				template.error = lang.clone(widget.error);
+			}
+			if (widget.active) {
+				template.active = lang.clone(widget.active);
+			}
+			if (widget.focus) {
+				template.focus = lang.clone(widget.focus);
+			}
+			
+			template.style = lang.clone(widget.style);
 			template.has = lang.clone(widget.has);
 			template.props = lang.clone(widget.props);
 			template.w = widget.w;
@@ -143,9 +198,10 @@ export default class Templates extends BaseController{
 			/**
 			 * make templates for all children
 			 */
-			var boundingBox = this.getBoundingBox(group.children);
-			for(var i=0; i < group.children.length; i++){
-				var widgetID = group.children[i];
+			let allChildren = this.getAllGroupChildren(group)
+			var boundingBox = this.getBoundingBox(allChildren);
+			for(var i=0; i < allChildren.length; i++){
+				var widgetID = allChildren[i];
 				var widget = this.model.widgets[widgetID];
 				
 				var t = this._createWidgetTemplate(widget, false, name+"_"+i, "");
@@ -178,6 +234,18 @@ export default class Templates extends BaseController{
 				if(widget){
 					widget.template = t.id;
 					widget.style = {};
+					if (widget.hover) {
+						widget.hover = {}
+					}
+					if (widget.error) {
+						widget.error = {}
+					}
+					if (widget.focus) {
+						widget.focus = {}
+					}
+					if (widget.active) {
+						widget.active = {}
+					}
 				} else {
 					console.warn("No Widget with ", widgetID);
 				}			

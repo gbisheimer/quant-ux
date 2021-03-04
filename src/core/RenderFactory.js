@@ -9,6 +9,7 @@ import CheckBoxWidget from 'core/widgets/CheckBoxWidget'
 import RadioBox from 'core/widgets/RadioBox'
 import RadioBox2 from 'core/widgets/RadioBox2'
 import SwitchWidget from 'core/widgets/SwitchWidget'
+import Button from 'core/widgets/Button'
 import DropDown from 'core/widgets/DropDown'
 import TextBox from 'core/widgets/TextBox'
 import Password from 'core/widgets/Password'
@@ -35,13 +36,22 @@ import Chart from 'core/widgets/Chart'
 import HoverDropDown from 'core/widgets/HoverDropDown'
 import CheckBoxGroup from 'core/widgets/CheckBoxGroup'
 import RadioGroup from 'core/widgets/RadioGroup'
-import ChatBot from 'core/widgets/ChatBot'
 import LabeledIconToggle from 'core/widgets/LabeledIconToggle'
-import SVG from 'core/widgets/SVG'
+import Rest from 'core/widgets/Rest'
+import Vector from 'core/widgets/Vector'
 import Sketch from 'core/widgets/Sketch'
 import Repeater from 'core/widgets/Repeater'
 import Upload from 'core/widgets/Upload'
 import UploadPreview from 'core/widgets/UploadPreview'
+import WebLink from 'core/widgets/WebLink'
+import ProgressBar from 'core/widgets/ProgressBar'
+import ScreenSegment from 'core/widgets/ScreenSegment'
+import CountingStepper from 'core/widgets/CountingStepper'
+import Tree from 'core/widgets/Tree'
+import IconButton from 'core/widgets/IconButton'
+import Paging from 'core/widgets/Paging'
+import Timeline from 'core/widgets/Timeline'
+
 import Animation from 'core/Animation'
 import Core from 'core/Core'
 import SymbolService from 'services/SymbolService'
@@ -58,6 +68,7 @@ export default class RenderFactory extends Core {
 		this._widgetNodes = {};
 		this._widgetModels = {};
 		this._iconNodes = {};
+		this._imageNodes = {};
 		this._borderNodes = {};
 		this._editNodes = {};
 		this._uiWidgets = {};
@@ -65,7 +76,15 @@ export default class RenderFactory extends Core {
 		this._containerWidgets = {}
 		this._scaleX = 1;
 		this._scaleY = 1;
+		this._componentClassCache = {}
 		this.hash = null;
+		this.isPublic = false
+		this.styleKeysForResize = [
+			'fontSize',
+			"borderTopLeftRadius", "borderTopRightRadius", "borderBottomRightRadius", "borderBottomLeftRadius",
+			"borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+			'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+			'boxShadow', 'textShadow', 'letterSpacing', 'icon', 'backgroundImage']
 		this.logger.log(2, "constructor", "exit > " + this.mode);
 	}
 
@@ -76,9 +95,19 @@ export default class RenderFactory extends Core {
 		this._scaleY = y;
 	}
 
+	setPublic (p) {
+		this.logger.log(3, "setPublic", "enter", p);
+		this.isPublic = p
+	}
+
 	setHash (h) {
-		this.logger.log(0, "setHash", "enter >", h);
+		this.logger.log(-1, "setHash", "enter");
 		this.hash = h
+	}
+
+	setJwtToken (t) {
+		this.logger.log(1, "setJwtToken", "enter");
+		this.jwtToken = t
 	}
 
 	setMode(m) {
@@ -106,8 +135,6 @@ export default class RenderFactory extends Core {
 
 
 		if (widget) {
-
-
 			/**
 			 * Calculate the delta to not update unneeded stuff
 			 */
@@ -138,15 +165,22 @@ export default class RenderFactory extends Core {
 
 		var widget;
 		if (this._uiWidgets[id]) {
+
 			widget = this._uiWidgets[id];
 			widget.hash = this.hash
+			widget.jwtToken = this.jwtToken
+
 		} else {
 			var model = this._widgetModels[id];
 
 			if (model) {
 				widget = this.$new(UIWidget);
+
+				widget._isAnimWrapper = true
 				widget.model = model;
 				widget.hash = this.hash
+				widget.jwtToken = this.jwtToken
+
 				widget.style = model.style;
 				widget._scaleX = this._scaleX;
 				widget._scaleY = this._scaleY;
@@ -155,6 +189,8 @@ export default class RenderFactory extends Core {
 				widget._backgroundNodes = [div];
 				widget._paddingNodes = [div];
 				widget._shadowNodes = [div];
+				widget._iconNodes = [this._iconNodes[id]]
+				widget._imageNodes = [this._imageNodes[id]]
 				widget.domNode = div;
 				var border = this._borderNodes[id];
 				if (border) {
@@ -256,6 +292,9 @@ export default class RenderFactory extends Core {
 		}
 	}
 
+	/**
+	 * Repeater can rerender its childnre
+	 */
 	updateContainerChild (child, model) {
 		if (this._containerWidgets[child.container]) {
 			let uiWidget = this._containerWidgets[child.container]
@@ -267,8 +306,26 @@ export default class RenderFactory extends Core {
 		}
 	}
 
+	updateSegementChild (widget, model) {
+		for (let i=0; i< widget.segmentParent.length; i++){
+			let parentID = widget.segmentParent[i]
+			let uiWidget = this.getUIWidgetByID(parentID)
+			if (uiWidget) {
+				uiWidget.setZoomedModel(model);
+				uiWidget.updateChild(widget)
+			}
+		}
+	}
+
 	updateWidgetHTML (parent, model) {
-		this.setStyle(parent, model, true);
+		this.setStyle(parent, model, true, false);
+	}
+
+	reizeWidgetHTML (parent, model) {
+		/**
+		 * Add here a list of props to be resized, e.g. borderwidth but not color
+		 */
+		this.setStyle(parent, model, true, true);
 	}
 
 	/**********************************************************************
@@ -285,12 +342,17 @@ export default class RenderFactory extends Core {
 		var instance = new ComponentClass();
 		instance.mode = this.mode
 		instance.$mount(); // pass nothing
+		/**
+		 * We have to set the JWT token!
+		 */
+		instance.setJwtToken(this.jwtToken)
+		instance.hash = this.hash
+		instance.setPublic(this.isPublic)
 		return instance;
 	}
 
 
 	createWidgetHTML(parent, model) {
-
 
 		css.add(parent, "MatchWidgetType" + model.type);
 
@@ -309,7 +371,7 @@ export default class RenderFactory extends Core {
 				console.warn("No render method for", model.type);
 			}
 		}
- 
+
 		/**
 		 * now add style for non ui widgets
 		 */
@@ -317,7 +379,6 @@ export default class RenderFactory extends Core {
 
 		if (this._uiWidgets[model.id]) {
 			var w = this._uiWidgets[model.id];
-
 			if (this.mode == "simulator") {
 				w.wireEvents();
 			}
@@ -325,7 +386,6 @@ export default class RenderFactory extends Core {
 			 * In case of player or simulator set previews status
 			 */
 			if (this.mode == "simulator" || this.mode == "view") {
-
 				if (model.inherited) {
 					var orgModel = this.model.widgets[model.inherited];
 					if (orgModel) {
@@ -337,7 +397,6 @@ export default class RenderFactory extends Core {
 							});
 						}
 					}
-
 				} else {
 					if (this._uiWidgetsStates[model.id] != null && this._uiWidgetsStates[model.id] != undefined) {
 						if (model.props && model.props.ignoreStateOnPageLoad) {
@@ -357,6 +416,54 @@ export default class RenderFactory extends Core {
 		this._uiWidgets[model.id] = checkBox;
 	}
 
+	_createScreenSegment (parent, model) {
+		let segement = this.$new(ScreenSegment)
+		segement.placeAt(parent);
+		/**
+		 * In the simulator the zoomedModel is not set,
+		 * but the modle will do too
+		 */
+		if (this.zoomedModel){
+			segement.setZoomedModel(this.zoomedModel)
+		} else {
+			segement.setZoomedModel(this.model)
+		}
+		segement.setSymbol(this.isSymbol)
+
+		this._uiWidgets[model.id] = segement;
+		this._containerWidgets[model.id] = segement;
+	}
+
+	_createIconButton(parent, model) {
+		var widget = this.$new(IconButton);
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+	_createTree(parent, model) {
+		var widget = this.$new(Tree);
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+	_createTimeline (parent, model) {
+		var widget = this.$new(Timeline)
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+	_createVerticalNavigation(parent, model) {
+		var widget = this.$new(Tree);
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+	_createCountingStepper (parent, model) {
+		let stepper = this.$new(CountingStepper)
+		stepper.placeAt(parent);
+		this._uiWidgets[model.id] = stepper;
+	}
+
 	_createRepeater (parent, model) {
 		var repeater = this.$new(Repeater);
 		repeater.placeAt(parent);
@@ -374,6 +481,18 @@ export default class RenderFactory extends Core {
 		this._containerWidgets[model.id] = repeater;
 	}
 
+	_createWebLink (parent, model) {
+		var upload = this.$new(WebLink);
+		upload.placeAt(parent);
+		this._uiWidgets[model.id] = upload;
+	}
+
+	_createProgressBar(parent, model) {
+		var upload = this.$new(ProgressBar);
+		upload.placeAt(parent);
+		this._uiWidgets[model.id] = upload;
+	}
+
 	_createUpload (parent, model) {
 		var upload = this.$new(Upload);
 		upload.placeAt(parent);
@@ -382,6 +501,7 @@ export default class RenderFactory extends Core {
 
 	_createUploadPreview(parent, model) {
 		var upload = this.$new(UploadPreview);
+		upload.hash = this.hash
 		upload.placeAt(parent);
 		this._uiWidgets[model.id] = upload;
 	}
@@ -404,6 +524,12 @@ export default class RenderFactory extends Core {
 		this._uiWidgets[model.id] = checkBox;
 	}
 
+	_createRest(parent, model) {
+		var widget = this.$new(Rest);
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
 	_createRadioBox(parent, model) {
 		var widget = this.$new(RadioBox);
 		widget.placeAt(parent);
@@ -422,21 +548,22 @@ export default class RenderFactory extends Core {
 		this._uiWidgets[model.id] = widget;
 	}
 
-	_createChatBot(parent, model) {
-		var widget = this.$new(ChatBot);
-		widget.setMode(this.mode)
-		widget.placeAt(parent);
-		this._uiWidgets[model.id] = widget;
-	}
-
 	_createSketch(parent, model) {
 		var widget = this.$new(Sketch);
+		widget.hash = this.hash
 		widget.placeAt(parent);
 		this._uiWidgets[model.id] = widget;
 	}
 
-	_createSVG(parent, model) {
-		var widget = this.$new(SVG);
+	_createVector(parent, model) {
+		var widget = this.$new(Vector);
+		widget.hash = this.hash
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+	_createPaging(parent, model) {
+		var widget = this.$new(Paging);
 		widget.placeAt(parent);
 		this._uiWidgets[model.id] = widget;
 	}
@@ -636,18 +763,29 @@ export default class RenderFactory extends Core {
 
 	}
 
+	/**
+	 * Create buddons with plain JS. This is 2x faster
+	 * than using a dedicated VUE component
+	 */
 	_createButton(parent, model) {
 		css.add(parent, "MatcEventedWidget");
 		var border = this._createBorder(parent, model);
 		this._createInlineEdit(border, model);
 	}
 
+	/**
+	 * Using a VUE widget is much slower!
+	 */
+	_createButtonSlow(parent, model) {
+		var widget = this.$new(Button)
+		widget.mode = this.mode
+		widget.placeAt(parent);
+		this._uiWidgets[model.id] = widget;
+	}
+
+
 	_createBox(parent, model) {
 		var border = this._createBorder(parent, model);
-
-		/**
-		 * FIXME: Make this smart.
-		 */
 		return border;
 	}
 
@@ -656,19 +794,18 @@ export default class RenderFactory extends Core {
 		var widget = this.$new(Label);
 		widget.placeAt(parent);
 		this._uiWidgets[model.id] = widget;
-		//this._createInlineEdit(parent, model);
 	}
 
 	_createImage(parent, model) {
-		//css.add(parent, "MatcEventedWidget");
-		if (model.style.backgroundImage) {
-			css.remove(parent, "MatchWidgetTypeImage");
-		} else {
-			var span = document.createElement("span");
-			css.add(span, "glyphicon glyphicon-picture");
-		}
+		/**
+		 * Since 3.0.41 we add another div so we can rotate
+		 */
+		let imgCntr =  document.createElement("div")
+		css.add(imgCntr, 'MatchWidgetTypeImageCntr')
+		parent.appendChild(imgCntr)
+		this._imageNodes[model.id] = imgCntr
+		css.add(parent, "MatchWidgetTypeImage");
 	}
-
 
 	_createIcon(parent, model) {
 		//css.add(parent, "MatcEventedWidget");
@@ -693,7 +830,7 @@ export default class RenderFactory extends Core {
 			 * Show default label in edit mode!
 			 */
 			if (this.mode == "edit") {
-				this.setInnerHTML(inlineEdit, "");
+				this.setTextContent(inlineEdit, "");
 			}
 		} else {
 			this.setInnerHTML(inlineEdit, model.props.label);
@@ -716,43 +853,71 @@ export default class RenderFactory extends Core {
 	 **********************************************************************/
 
 
-	setStyle(parent, model, isUpdate = false) {
+	setStyle(parent, model, isUpdate = false, isResize = false) {
 		var style = this.getStyle(model, parent);
 		if (style) {
 			if (!this._uiWidgets[model.id]) {
+				/**
+				 * Remove this get style???
+				 */
 				style = this.getStyle(model, parent);
 				if (style) {
-					for (var p in style) {
-						/**
-						 * check if we have a special function for
-						 * the property
-						 */
-						if (this["_set_" + p]) {
-							this["_set_" + p](parent, style, model);
-						} else {
-							if (style[p] != null) {
-								parent.style[p] = style[p];
-							} else {
-								console.warn("The style", p, " is no value!", model);
-							}
-						}
-					}
+					this.setStyle2DomNode(parent, style, model, isResize)
 				}
 			} else {
 				try {
 					var w = this._uiWidgets[model.id];
 					w.isSimulator = this.mode == "simulator"
 					w.setFactory(this);
-					w.render(model, style, this._scaleX, this._scaleY, isUpdate);
+					/**
+					 * Since 3.0.29 we try to optimize scaleing operations. This could make
+					 * some widgets, that have a lot of children, much faster.rr
+					 */
+					if (isResize) {
+						w.updateScale(model, style, this._scaleX, this._scaleY)
+					} else {
+						w.render(model, style, this._scaleX, this._scaleY, isUpdate);
+					}
+
 				} catch (e) {
 					this.logger.error("setStyle", "Error", e);
 				}
 			}
 		}
+	}
+
+	setStyle2DomNode (parent, style, model, isResize = false) {
 
 		/**
-		 * FIXME: add some marker for invissible elements
+		 * Since 3.0.32 we just update some props on zoom
 		 */
+		if (isResize === true) {
+
+			for (let i=0; i < this.styleKeysForResize.length; i++) {
+				let p = this.styleKeysForResize[i]
+				if (style[p] !== null && style[p] !== 0) {
+					if (this["_set_" + p]) {
+						this["_set_" + p](parent, style, model);
+					} else {
+							parent.style[p] = style[p];
+					}
+				}
+			}
+		} else {
+			for (let p in style) {
+				// we have to call the method, to be sure to also handle nulls,
+				// e.g. for background images
+				if (this["_set_" + p]) {
+					this["_set_" + p](parent, style, model);
+				} else {
+					if (style[p] != null) {
+						parent.style[p] = style[p];
+					} else {
+						console.warn("The style", p, " is no value!", model);
+					}
+				}
+			}
+		}
 	}
 
 	_set_fixed() {
@@ -773,6 +938,10 @@ export default class RenderFactory extends Core {
 				height -= this.getZoomed(style.borderBottomWidth, this._scaleY);
 			}
 
+			if (style.iconSizeFactor) {
+				height = Math.round(style.iconSizeFactor * height)
+			}
+
 			/**
 			 * Reset icon???
 			 */
@@ -786,7 +955,10 @@ export default class RenderFactory extends Core {
 		if (this._scaleX < 1) {
 			size = size * 0.95;
 		}
-		parent.style.fontSize = size + "px";
+		/**
+		 * Since 3.0.32 we round
+		 */
+		parent.style.fontSize = Math.round(size) + "px";
 	}
 
 	_set_rotate(parent, style,) {
@@ -1124,6 +1296,9 @@ export default class RenderFactory extends Core {
 				value += "," + color.c + " " + color.p + "% ";
 			}
 			value + ");";
+			/**
+			 * FIXME: Add suppoprt for radial as well
+			 */
 			parent.style.background = "linear-gradient" + value;
 			parent.style.background = "-webkit-linear-gradient" + value;
 		} else {
@@ -1148,17 +1323,38 @@ export default class RenderFactory extends Core {
 
 	}
 
+	_set_backgroundImageRotation (parent, style, model) {
+		let imgCntr = this._imageNodes[model.id]
+		if (imgCntr) {
+			imgCntr.style.transform = `rotate(${style.backgroundImageRotation}deg)`
+
+		} else {
+			let iconNode = this._iconNodes[model.id]
+			if (iconNode) {
+				iconNode.style.transform = `rotate(${style.backgroundImageRotation}deg)`
+				css.add(parent, 'MatchWidgetTypeIconRotated')
+			}
+		}
+	}
+
 	/**
 	 * background image
 	 */
 	_set_backgroundImage(parent, style, model) {
 
-		var node = this._borderNodes[model.id];
+		let node = this._borderNodes[model.id];
 		if (node) {
 			parent = node;
 		}
+		/**
+		 * Since 3.0.41 we have child which will get the image
+		 */
+		let imgCntr = this._imageNodes[model.id]
+		if (imgCntr) {
+			parent = imgCntr
+		}
 
-		var img = style.backgroundImage;
+		let img = style.backgroundImage;
 		css.add(parent, "MatcScreenImage");
 		if (img) {
 			if (img.w > img.h) {
@@ -1168,9 +1364,14 @@ export default class RenderFactory extends Core {
 			}
 			if (this.hash) {
 				parent.style.backgroundImage = "url(/rest/images/" + this.hash + "/" + img.url + ")";
+			} else if (this.jwtToken) {
+				parent.style.backgroundImage = "url(/rest/images/" + img.url + "?token=" + this.jwtToken+ ")";
 			} else {
-				var url = "url(/rest/images/" + img.url + ")";
-				parent.style.backgroundImage = url;
+				if (!this.isPublic) {
+					this.logger.warn('_set_backgroundImage', 'error > no token or hash')
+					this.logger.sendError(new Error('RenderFactgoryNoToken'))
+				}
+				parent.style.backgroundImage = "url(/rest/images/" + img.url + ")";
 			}
 
 			if (style.backgroundSize) {
@@ -1186,8 +1387,8 @@ export default class RenderFactory extends Core {
 				parent.style.backgroundPosition = "0 0"; // 100%
 			}
 
-
 			parent.style.backgroundRepeat = "no-repeat";
+			parent.style.border = "none";
 		} else {
 			/**
 			 * Images get a placeholder x... mixture of canvas and css border
@@ -1286,7 +1487,8 @@ export default class RenderFactory extends Core {
 			}
 
 		}
-
+		this._iconNodes = {}
+		this._imageNodes = {};
 		this._labelNodes = {};
 		this._borderNodes = {};
 		this._editNodes = {};
@@ -1304,5 +1506,23 @@ export default class RenderFactory extends Core {
 			}
 		}
 		delete this._widgetsToDestroy;
+	}
+
+	destroyWidgetsById(ids) {
+		this.logger.log(-1, "destroyWidgets", "enter > ", ids)
+		ids.forEach(id => {
+			var w = this._uiWidgets[id]
+			if (w) {
+				if (this.mode == "simulator" || this.mode == "view") {
+					var widget = this.model.widgets[id];
+					if (widget && widget.inherited) {
+						id = widget.inherited;
+					}
+					this._uiWidgetsStates[id] = w.getState();
+				}
+				w.beforeDestroy()
+				delete this._uiWidgets[id]
+			}
+		})
 	}
 }

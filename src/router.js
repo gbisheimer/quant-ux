@@ -1,7 +1,8 @@
 import Vue from 'vue'
-import Router from 'vue-router'
+import VueRouter from 'vue-router'
 
-Vue.use(Router)
+Vue.use(VueRouter)
+
 
 let matcRoutes = []
 
@@ -12,9 +13,9 @@ matcRoutes.push({path:'404.html', component: () => import(/* webpackChunkName: "
 matcRoutes.push({path:'help.html', component: () => import(/* webpackChunkName: "about" */ 'views/Help.vue')})
 
 // Apps
-matcRoutes.push({path:'', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue')})
-matcRoutes.push({path:'my-apps.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue')})
-matcRoutes.push({path:'logged_in.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue')})
+matcRoutes.push({path:'', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue'),  meta: {isDarkHeader: true}})
+matcRoutes.push({path:'my-apps.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue'), meta: {isDarkHeader: true}})
+matcRoutes.push({path:'logged_in.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Apps.vue'),  meta: {isDarkHeader: true}})
 matcRoutes.push({path:'create-app.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Create.vue')})
 matcRoutes.push({path:'tryout.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Create.vue'), meta: {isTryout:true}})
 matcRoutes.push({path:'apps/:id.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Overview.vue')})
@@ -22,7 +23,7 @@ matcRoutes.push({path:'apps/:id/:tab.html', component: () => import(/* webpackCh
 matcRoutes.push({path:'apps/:id/replay/:session.html', component: () => import(/* webpackChunkName: "apps" */ 'views/apps/Overview.vue')})
 
 
-export default new Router({
+export default new VueRouter({
   routes: [
     {
       path: '/simulate.html',
@@ -96,9 +97,53 @@ export default new Router({
       component: () => import(/* webpackChunkName: "unit" */ './unit/CodeGenTest.vue')
     },
     {
-      path: '/test/Player.html',
-      component: () => import(/* webpackChunkName: "unit" */ './unit/PlayerTest.vue')
+      path: '/test/Rest.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/RestSettingsTest.vue')
+    },
+    {
+      path: '/test/Sim.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/SimulatorTest.vue')
+    },
+    {
+      path: '/test/Rule.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/RuleTest.vue')
+    },
+    {
+      path: '/test/DataBinding.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/DataBindingTest.vue')
+    },
+    {
+      path: '/test/DataBindingTree.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/DataBindingTreeTest.vue')
+    },
+    {
+      path: '/test/Tree.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/TreeTest.vue')
+    },
+    {
+      path: '/test/Layer.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/LayerTest.vue')
+    },
+    {
+      path: '/test/Table.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/TableConfTest.vue')
+    },
+    {
+      path: '/test/SVG.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/SVGEditorTest.vue')
+    },
+    {
+      path: '/test/Figma.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/FigmaTest.vue')
+    },
+    {
+      path: '/test/Import.html',
+      component: () => import(/* webpackChunkName: "unit" */ './unit/ImportDialogTest.vue')
     }
+    //{
+    //  path: '/test/Sketch.html',
+    //  component: () => import(/* webpackChunkName: "unit" */ './unit/SketchTest.vue')
+    // }
     //{
     //  path: '/test/paper.html',
     //  component: () => import(/* webpackChunkName: "unit" */ './unit/Paper.vue')

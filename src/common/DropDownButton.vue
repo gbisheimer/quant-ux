@@ -16,18 +16,18 @@ import css from "dojo/css";
 import lang from "dojo/_base/lang";
 import on from "dojo/on";
 import touch from "dojo/touch";
-import win from 'dojo/_base/win'
-import Logger from 'common/Logger'
+import win from "dojo/_base/win";
+import Logger from "common/Logger";
 
 var _openVommondDropDownButton = null;
 
 export default {
   name: "DropDownButton",
   mixins: [DojoWidget],
-  props:['l', 'options'],
+  props: ["l", "options", "value"],
   data: function() {
     return {
-      value: false,
+      selected: false,
       hasObjects: false,
       updateLabel: true,
       maxLabelLength: -1,
@@ -40,17 +40,19 @@ export default {
   components: {},
   methods: {
     postCreate: function() {
-      this.own(on(this.domNode, touch.press, lang.hitch(this, "showDropDown")));      
+      this.own(on(this.domNode, touch.press, lang.hitch(this, "showDropDown")));
       if (this.l) {
         this.setLabel(this.l);
       }
       if (this.options) {
-        this.setOptions(this.options)
+        this.setOptions(this.options);
+      }
+      if (this.value) {
+        this.setValue(this.value);
       }
     },
 
     showDropDown: function(e) {
-      console.debug('showDropDown')
       this.stopEvent(e);
 
       if (this._dropDownOpen) {
@@ -61,12 +63,19 @@ export default {
           if (_openVommondDropDownButton.hideDropDown) {
             _openVommondDropDownButton.hideDropDown();
           } else {
-            console.debug( "showDropDown() Strange Open", _openVommondDropDownButton);
+            console.debug(
+              "showDropDown() Strange Open",
+              _openVommondDropDownButton
+            );
           }
         }
 
         css.add(this.domNode, this.openCSS);
-        this._mouseDownListener = on(win.body(), "mousedown", lang.hitch(this, "hideDropDown") );
+        this._mouseDownListener = on(
+          win.body(),
+          "mousedown",
+          lang.hitch(this, "hideDropDown")
+        );
         _openVommondDropDownButton = this;
         this._dropDownOpen = true;
       }
@@ -191,8 +200,7 @@ export default {
       if (this.updateLabel) {
         this.setLabel(value);
       }
-
-      this.value = value;
+      this.selected = value;
     },
 
     onChange: function(value, e) {
@@ -203,11 +211,17 @@ export default {
       }
       this.setValue(value);
       this.emit("change", value, e);
+      this.emit("input", this.selected);
+    }
+  },
+  watch: {
+    value(v) {
+      this.setValue(v);
     }
   },
   mounted() {
-    this.logger = new Logger('DropDownButton')
-    this.logger.log(10, 'mounted', 'enter')
+    this.logger = new Logger("DropDownButton");
+    this.logger.log(10, "mounted", "enter");
   }
 };
 </script>

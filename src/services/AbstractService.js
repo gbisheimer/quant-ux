@@ -1,13 +1,30 @@
 export default class AbstractService {
 
+    constructor () {
+        this.token = null
+    }
+
+    setToken (token) {
+        this.token = token
+    }
+
     _createDefaultHeader() {
-        let headers = new Headers({
-            'Content-Type': 'application/json'
-        }, {
-            'Accept': 'application/json'
-        })
-        this.addHeaders(headers)
-        return headers
+        if (this.token) {
+            let headers = new Headers({
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + this.token
+            })
+            this.addHeaders(headers)
+            return headers
+        } else {
+            let headers = new Headers({
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            })
+            this.addHeaders(headers)
+            return headers
+        }
     }
 
     /**
@@ -19,7 +36,7 @@ export default class AbstractService {
     _getChached (url, successCallback, errorCallback) {
         this.logger.log(6, '_getChached', 'enter ', url)
         return new Promise((resolve, reject) => {
-            /** 
+            /**
              * 1st check cache
              */
             if (this._cache && this._cache[url]) {
@@ -50,6 +67,7 @@ export default class AbstractService {
                         }
                     })
                 } else {
+                    this.onError(url, res)
                     if (errorCallback) {
                         errorCallback(new Error('Could not load ...'))
                     }
@@ -81,6 +99,7 @@ export default class AbstractService {
                         }
                     })
                 } else {
+                    this.onError(url, res)
                     if (errorCallback) {
                         errorCallback(new Error('Could not load ...'))
                     }
@@ -105,7 +124,6 @@ export default class AbstractService {
                 headers: this._createDefaultHeader()
             }).then((res) => {
                 if (res.status === 200) {
-
                     res.json().then(j => {
                         this.logger.log(6, '_post', 'exit ')
                         if (successCallback) {
@@ -113,8 +131,8 @@ export default class AbstractService {
                         }
                         resolve(j)
                     })
-
                 } else {
+                    this.onError(url, res)
                     if (errorCallback) {
                         errorCallback(new Error('Could not _post ...'))
                     }
@@ -153,6 +171,7 @@ export default class AbstractService {
                     reject(new Error('Could not put'))
                 }
             }).catch((err) => {
+                this.onError(url)
                 if (errorCallback) {
                     errorCallback(err)
                 }
@@ -176,6 +195,7 @@ export default class AbstractService {
                         resolve(j)
                     })
                 } else {
+                    this.onError(url, res)
                     if (errorCallback) {
                         errorCallback(new Error('Could not delete ...'))
                     }
@@ -188,6 +208,16 @@ export default class AbstractService {
                 reject(new Error('Could not delete'))
             })
         })
+    }
+
+    setErrorHandler (handler) {
+        this.errorHandler = handler
+    }
+
+    onError (url, res) {
+        if (this.errorHandler) {
+            this.errorHandler(url, res)
+        }
     }
 
 }

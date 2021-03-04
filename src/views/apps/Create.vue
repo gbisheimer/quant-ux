@@ -1,63 +1,41 @@
 <template>
-  <div>
-    
-  <div class="MatcHeader  MactMainGradient MatcHeaderTab bs-docs-header">
-       <div class="container">
-         <div class="row MatcHeaderTopRow">
-           <div class="col-md-12">
-            <h2>Create a new prototype</h2>
-           </div>
-         </div>
-
-         <div class="row MatcHeaderBottomRow">
-           <div class="col-md-12 MatcRight">
-           </div>
-         </div>
-       </div>
-   </div>
-
-    <div class="MatcContent">
-      <div class="MatcSection">
-        <div class="container">
-          <div class="row">
-            <div class="col-md-6">
-              <form>
-                <div class="form-group">
-                  <label>Name</label>
-                  <input type="text"  class="form-control input-lg" v-model="name" placeholder="Enter App name" >
-                  <div data-binding-error="name"></div>
-                </div>
-
-                <div class="form-group">
-                  <label>ScreenSize *</label>
-                  <ScreenSizeSelector @change="setType"/>
-                </div>
-              </form>
-
-              <div class="MatcButtonBar">
-                <a class="MatcButton" @click="create">Create</a>
-                <a href="#/my-apps.html" class>Cancel</a>
+  <main>
+    <section class="section">
+      <div class="container">
+        <h2 class="title">Create a new prototype</h2>
+        <div class="columns">
+          <div class="column is-6">
+            <form>
+              <div class="field">
+                <label>Name</label>
+                <input type="text" class="input" v-model="name" placeholder="Enter App name" ref="inputName"/>
+                <div data-binding-error="name"></div>
               </div>
 
-              <div
-                class="MatcHint MatcFontSmall MatcMarginTopXXL">
-                  * The screen size is measured in points and not pixel!
-                </div>
-            </div>
-
-            <div class="col-md-4 col-md-offset-1 MatcPadding"></div>
+              <div class="form-group">
+                <label>ScreenSize *</label>
+                <ScreenSizeSelector @change="setType" />
+              </div>
+            </form>
           </div>
         </div>
+
+        <div class="buttons mt-16">
+          <a class="button is-primary" @click="create">Create</a>
+          <a href="#/my-apps.html" class="button is-text">Cancel</a>
+        </div>
+
+        <p class="has-text-grey is-size-6">* The screen size is measured in points and not pixel!</p>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </template>
 <script>
 import Logger from "common/Logger";
 import DojoWidget from "dojo/DojoWidget";
 import Services from "services/Services";
 import ScreenSizeSelector from "page/ScreenSizeSelector";
-import ModelFactory from 'core/ModelFactory'
+import ModelFactory from "core/ModelFactory";
 
 export default {
   name: "Create",
@@ -74,28 +52,32 @@ export default {
   },
   methods: {
     setType(t) {
-      console.debug('setType', t.screenSize)
-        this.type = t;
+      this.type = t;
     },
     async create() {
-        if (this.$route.meta && this.$route.meta.isTryout){
-          this.logger.info("create", "enter > tryout");
-          location.href = `#/tryout2.html?w=${this.type.screenSize.w}&h=${this.type.screenSize.h}&t=${this.type.type}`
+      if (this.$route.meta && this.$route.meta.isTryout) {
+        this.logger.info("create", "enter > tryout");
+        location.href = `#/tryout2.html?w=${this.type.screenSize.w}&h=${this.type.screenSize.h}&t=${this.type.type}`;
+      } else {
+        this.logger.info("create", "enter > user");
+        let fac = new ModelFactory();
+        let model = fac.createAppModel(this.name, "", this.type);
+        let app = await Services.getModelService().createApp(model);
+        if (app && app.id) {
+          location.href = "#/apps/" + app.id + "/create.html";
         } else {
-          this.logger.info("create", "enter > user");
-          let fac = new ModelFactory()
-          let model = fac.createAppModel(this.name, '', this.type)
-          let app = await Services.getModelService().createApp(model);
-          if (app && app.id) {
-              location.href = "#/apps/" + app.id + "/create.html"
-          } else {
-              this.showError('Could not create app')
-          }
+          this.showError("Could not create app");
         }
+      }
     }
   },
   async mounted() {
     this.logger = new Logger("Create");
+    setTimeout(() => {
+      if (this.$refs.inputName) {
+        this.$refs.inputName.focus()
+      }
+    }, 50)
   }
 };
 </script>

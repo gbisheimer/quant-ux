@@ -16,8 +16,10 @@ import Animation from 'core/Animation'
 export default {
   name: "Preview",
   mixins: [Layout, DojoWidget],
+  props: ['app', 'screen', 'isPublic'],
   data: function() {
     return {
+      isFillBackground: false,
       debug: false,
       mode: "standalone",
       loadingMessage: "No Start Screen!",
@@ -43,6 +45,16 @@ export default {
       this.debug = d;
     },
 
+    setJwtToken (t) {
+      this.jwtToken = t
+      this.renderFactory.setJwtToken(t)
+    },
+
+    setPublic (p) {
+      this.isPublic = p
+      this.renderFactory.setPublic(p)
+    },
+
     setInvitation: function(h) {
       this.logger.log(2, "setInvitation", "Set hash to render factory");
       this.hash = h;
@@ -59,7 +71,7 @@ export default {
       this.selectedWidgetID = widgetID;
 
       if (this.model.fonts) {
-				this.attachFontsToDom(this.model.fonts)				
+				this.attachFontsToDom(this.model.fonts)
       }
       this.initScale();
 
@@ -212,19 +224,11 @@ export default {
         console.warn("initScale() > DEPRECTAED : ", this.scale);
       }
 
-      this.logger.log(
-        5,
-        "initScale",
-        "enter > " + this.scale + " > " + this._scaleX + " > " + this._scaleY
-      );
+      this.logger.log(5, "initScale", "enter > " + this.scale + " > " + this._scaleX + " > " + this._scaleY);
     },
 
     render: function(screen) {
-      this.logger.log(
-        2,
-        "render",
-        "enter >" + this._scaleX + " > " + this._scaleY
-      );
+      this.logger.log(2, "render", "enter >" + this._scaleX + " > " + this._scaleY);
 
       if (!screen) {
         screen = this.getStartScreen();
@@ -287,7 +291,21 @@ export default {
        */
       this.addFixedWidgets();
 
+      if (this.isFillBackground) {
+        this.fillBackground(screen)
+      }
+
+
       return div;
+    },
+
+    fillBackground (screen) {
+      if (this.$el && this.$el.parentNode) {
+        let parent = this.$el.parentNode
+        if (screen.style && screen.style.background) {
+          parent.style.background = screen.style.background
+        }
+      }
     },
 
     addScreen: function(screen, div, scrollTop) {
@@ -316,7 +334,6 @@ export default {
       if (this._fixedWidgets) {
         for (var i = 0; i < this._fixedWidgets.length; i++) {
           var w = this._fixedWidgets[i];
-          console.debug("remove", w);
           if (w.parentNode) {
             try {
               w.parentNode.removeChild(w);
@@ -480,7 +497,12 @@ export default {
       }
 
       if (isOverlay) {
-        div.style.backgroundColor = "transparent";
+        /**
+         * Since 2.4 we can have overlays with background
+         */
+        if (!screen.style.hasBackground) {
+          div.style.backgroundColor = "transparent";
+        }
       }
       return div;
     },
@@ -800,6 +822,11 @@ export default {
       this._lastWidgetAnimationState = {};
     }
   },
-  mounted() {}
+  mounted() {
+    if (this.app) {
+      this.postCreate()
+      this.setModel(this.app, this.screen)
+    }
+  }
 };
 </script>

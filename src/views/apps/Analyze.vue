@@ -6,7 +6,10 @@
 </template>
 
 <style lang="css">
-  @import url("../../../public/style/matc.css");
+  @import url("../../style/matc.css");
+</style>
+<style lang="sass">
+  @import "../../style/bulma.sass";
 </style>
 
 <script>
@@ -50,13 +53,20 @@ export default {
         this.modelService.findApp(id),
         this.modelService.findTest(id),
         this.modelService.findEvents(id),
-        this.modelService.findSessionAnnotations(id)
+        this.modelService.findSessionAnnotations(id),
+        this.modelService.findInvitation(id)
       ]).then(values => {
-         this.buildCanvas(values[0], values[1], values[2], values[3])
+        let invitations = values[4];
+        var temp = {};
+        for (var key in invitations) {
+          temp[invitations[key]] = key;
+        }
+        let hash = temp[1];
+        this.buildCanvas(values[0], values[1], values[2], values[3], hash)
       })
     },
-    buildCanvas (model, test, events, annotation) {
-      this.logger.log(0, 'buildCanvas', 'enter')
+    buildCanvas (model, test, events, annotation, hash) {
+      this.logger.log(-1, 'buildCanvas', 'enter', hash)
 
       let canvas = this.$refs.canvas
       let toolbar = this.$refs.toolbar
@@ -75,6 +85,7 @@ export default {
        */
       var renderFactory = new RenderFactory();
       renderFactory.setModel(model);
+      renderFactory.setHash(hash)
 
       /**
        * Dependency injection
@@ -115,7 +126,6 @@ export default {
             break;
         }
       }
-      console.debug('asdas', startScreen)
       /**
        * controller will render screen
        */

@@ -3,6 +3,7 @@ import Logger from 'common/Logger'
 import Vue from "vue"
 import ModelGeom from 'core/ModelGeom'
 import lang from 'dojo/_base/lang'
+import CoreUtil from 'core/CoreUtil'
 // import HelloWorld from 'examples/HelloWorld'
 
 /**
@@ -31,7 +32,7 @@ class SymbolService extends AbstractService{
     }
 
     getIcons () {
-      return this._getChached('/public/icons.json')
+      return this._getChached('/icons.json')
     }
 
     hookInWidgets (themes) {
@@ -90,6 +91,7 @@ class SymbolService extends AbstractService{
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/spinner.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/stepper.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/switch.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/segment_button.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/tab.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/table.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/textbox.json'),
@@ -97,9 +99,17 @@ class SymbolService extends AbstractService{
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/typeahead.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/volume.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/repeater.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/wireframe/upload.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/upload.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/camera.json'),
             import(/* webpackChunkName: "themes" */ 'themes/wireframe/uploadpreview.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/weblink.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/progressbar.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/screensegment.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/countingstepper.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/tree.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/iconbutton.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/paging.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/wireframe/timeline.json'),
 
             import(/* webpackChunkName: "themes" */ 'themes/OpenUI/button2.json'),
             import(/* webpackChunkName: "themes" */ 'themes/OpenUI/calender.json'),
@@ -158,19 +168,6 @@ class SymbolService extends AbstractService{
             import(/* webpackChunkName: "themes" */ 'themes/charts/pie.json'),
             import(/* webpackChunkName: "themes" */ 'themes/charts/ring.json'),
 
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/boxes.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/button.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/checkbox.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/date.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/dialog.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/dropdown.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/image.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/input.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/input2.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/labels.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/tab.json'),
-            // import(/* webpackChunkName: "themes" */ 'themes/bootstrap/table.json'),
-
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/alerts.json'),
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/boxes.json'),
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/button.json'),
@@ -184,7 +181,46 @@ class SymbolService extends AbstractService{
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/input2.json'),
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/labels.json'),
             import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/tab.json'),
-            import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/table.json')
+            import(/* webpackChunkName: "themes" */ 'themes/bootstrap4/table.json'),
+
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/accordion.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/button.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/badge.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/alert.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/breadcrumbs.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/card.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/builder.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/buttongroup.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/dock.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/dockutility.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/labels.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/icon.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/checkbox.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/segment.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/toggle.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/switch.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/dropdown.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/counter.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/date.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/boxes.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/textbox.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/section.json'),
+            // import(/* webpackChunkName: "themes" */ 'themes/lightning/expression.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/modal.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/navigation.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/notification.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/panel.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/pill.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/popover.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/progress.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/prompt.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/radio.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/slider.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/tabs.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/toast.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/visualpicker.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/welcome.json'),
+            import(/* webpackChunkName: "themes" */ 'themes/lightning/tree.json')
           ]).then(values => {
             this.themes = []
             values.forEach(v => {
@@ -202,7 +238,7 @@ class SymbolService extends AbstractService{
     }
 
     convertAppToSymbols (app) {
-        let elements = Object.values(app.widgets).map(widget => {
+      let elements = Object.values(app.widgets).map(widget => {
 				let element = lang.clone(widget)
 				if (element.template && app.templates) {
 					let template = app.templates[element.template]
@@ -228,7 +264,6 @@ class SymbolService extends AbstractService{
 
 			if (app.groups) {
 				let groups = Object.values(app.groups).map(group => {
-				
           let bbbox = ModelGeom.getBoundingBox(group.children, app)
           let result = {
             w: bbbox.w,
@@ -249,8 +284,13 @@ class SymbolService extends AbstractService{
               element.y = element.y - bbbox.y
               result.children.push(element)
             }
-            
           })
+
+          /**
+           * Sort the group elements to ensure the correct rendering!
+           */
+          result.children = CoreUtil.getOrderedWidgets(result.children)
+
 					return result
         })
         elements = elements.concat(groups)

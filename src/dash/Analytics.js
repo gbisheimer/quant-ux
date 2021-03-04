@@ -4,6 +4,80 @@ import Grouping from 'common/Grouping'
 
 export default class {
 
+	filterEvents (events, anno) {
+		var bad = {};
+		for (let i = 0; i < anno.length; i++) {
+			var a = anno[i];
+			if (!a.isValid) {
+				bad[a.reference] = true;
+			}
+		}
+
+		var temp = [];
+		var l = events.length;
+		for (let i = 0; i < l; i++) {
+			var e = events[i];
+			if (!bad[e.session]) {
+				temp.push(e);
+			}
+		}
+
+		return temp;
+	}
+
+	getSurveyAnswers (events, app) {
+		let result = {
+			rows: [],
+			cols: []
+		}
+
+		let widgetDataBindings = {}
+		let widgetTypes = {}
+		Object.values(app.widgets).forEach(w => {
+			widgetTypes[w.id] = w.type
+			if (w.props && w.props.databinding && w.props.databinding.default && w.type !== 'Password') {
+				widgetDataBindings[w.id] = w.props.databinding.default
+			}
+		})
+
+		result.cols = Array.from(new Set(Object.values(widgetDataBindings)))
+		result.cols.sort((a, b) => {
+			return a.localeCompare(b)
+		})
+
+		var eventsDF = new DataFrame(events);
+		eventsDF.sortBy("time");
+		var sessionGrouping = eventsDF.groupBy("session");
+
+		/**
+		 * sort by start??
+		 */
+
+		sessionGrouping.foreach(df => {
+			let row = {}
+			result.cols.forEach(c => row[c] = '-')
+			df.sortBy("time");
+			var sessionEvents = df.as_array();
+			sessionEvents.forEach(e => {
+				delete e.user
+				if (app.widgets[e.widget]) {
+					if (e.widget && e.state && widgetDataBindings[e.widget]) {
+						let col = widgetDataBindings[e.widget]
+						if (widgetTypes[e.widget] === 'Rating') {
+							row[col] = (e.state.value * 1) + 1
+						} else {
+							row[col] = e.state.value
+						}
+					}
+				}
+			})
+			result.rows.push(row)
+		})
+
+
+		return result
+	}
+
 	nornalizeContainerChildEvents (events) {
 		events.forEach(e => {
 			if (e.widget && e.widget.indexOf('-') > 0) {
@@ -134,13 +208,13 @@ export default class {
 
 	/**
 	 * Creates a mini regex matcher for our tasks. It returns the first match of an flow!
-	 * 
+	 *
 	 * a match has the following properties:
-	 * 
+	 *
 	 *  duration: how long did the task take
-	 *  
+	 *
 	 *  count: how much events where between
-	 * 
+	 *
 	 */
 	createMatcher(name, flow, strict) {
 
@@ -216,7 +290,7 @@ export default class {
 							taskName: this.taskName
 						};
 						/**
-						 * FIX in  1.9.5. We have to start counting interactions 
+						 * FIX in  1.9.5. We have to start counting interactions
 						 * from the match if it is an interaction event
 						 */
 
@@ -331,7 +405,7 @@ export default class {
 						if (aState.type == "text" || aState.type == "typing" || aState.type == "select" || aState.type == "open" || aState.type == "navigate") {
 							/**
 							 * For multi value widgets(textboxes, password, & textarea, and select boxes) and dropdown events
-							 * we have a special 
+							 * we have a special
 							 * handling and allow all values
 							 */
 							return aState.type == bState.type;
@@ -474,7 +548,7 @@ export default class {
 								/**
 								 * if we do not want to count if
 								 * a user manages a task more than one time.
-								 * 
+								 *
 								 */
 								if (!allowMultiMatch) {
 									matcher.disabled = true;
@@ -618,7 +692,7 @@ export default class {
 			var taskDf = taskGrouping.get(task.id);
 
 			/**
-			 * FIXME: This is a bug! The analytics.getMergedTaskPerformance(df, tasks, annotation );	
+			 * FIXME: This is a bug! The analytics.getMergedTaskPerformance(df, tasks, annotation );
 			 * should have also performance for this task!
 			 */
 			if (taskDf) {
@@ -859,7 +933,7 @@ export default class {
 
 	/**
 	 * Get merged "report" for all widgets relative to the entire application!!
-	 * 
+	 *
 	 */
 	getWidgetStatistics(app, df) {
 
@@ -965,7 +1039,7 @@ export default class {
 				} else if (type == "WidgetClick" && widgetID) {
 					/**
 					 *  We do not want to count widget clicks double... so we
-					 *  remember that we have seen the widget already in a 
+					 *  remember that we have seen the widget already in a
 					 *  screen session.
 					 */
 					if (!widgetWasClicked[widgetID]) {
